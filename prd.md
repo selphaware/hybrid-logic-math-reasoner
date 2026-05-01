@@ -1,113 +1,159 @@
-# Hybrid Logic-Math Reasoner (HLMR) — Product Requirements
+# HLMR — Hybrid Logic-Math Reasoner
 
-**Status:** Draft v1
-**Owner:** project lead
-**Last updated:** 2026-04-25
+**Status:** Canonical project spec, v2 (fresh)
+**Last updated:** 2026-05-01
+**Per-milestone specs:** `PRD_milestone_1.md`, future `PRD_milestone_2.md`, etc.
 
 ---
 
 ## 1. Executive summary
 
-HLMR is a Python 3.12 hybrid reasoning engine that proves logical and mathematical problems containing unknowns, and returns a single object: a kernel-checked natural-deduction proof in which any unknowns have been resolved by unification, SMT, or symbolic algebra.
+HLMR is a Python 3.12 theorem prover that finds proofs of logical and
+mathematical goals over a user-supplied knowledge base. Goals may
+contain unknowns. The system finds bindings via goal-directed search
+(Prolog-style SLD resolution, optionally augmented with SMT and symbolic
+algebra), renders the result as a Fitch-style natural-deduction proof,
+and checks every proof through a small trusted kernel before reporting
+success.
 
-The system is built in four phases. Each phase produces something usable on its own, each strictly extends its predecessor, and the soundness root — a small auditable proof kernel — is built first and never modified casually thereafter.
+The system has two interaction modes against the same engine: a manual
+mode where the user drives clause selection, and an automated mode where
+the system searches. The kernel is invariant across modes and across
+all milestones.
 
-| Phase | Deliverable | Who constructs proofs |
-|---|---|---|
-| 0 | Kernel + IR + CLI proof checker | Nobody (just checks) |
-| 1 | Manual ND tool (terminal REPL) | The user, by hand |
-| 2 | ND with unknowns | User + unification/SMT engine |
-| 3 | Tactic engine (automated reasoning) | The system, automatically |
-
-Phase 3 may later be augmented by a learned step-suggester trained on proof corpora collected from phases 1 and 2. The neural component is auxiliary; the kernel is the root of trust.
-
-The target benchmarks are FOLIO, ProofWriter, LogiQA, Zebra-style logic puzzles, and a custom hybrid logic-plus-arithmetic suite. Not MATH or GSM8K.
+The first demos are kinship and Zebra-style logic puzzles. Math arrives
+in milestone 2 with Z3 (linear arithmetic) and SymPy (symbolic algebra).
+The end goal is a usable, sound, extensible reasoner with a growing
+knowledge base of axiomatic content — not a frontier-grade general
+mathematician.
 
 ---
 
 ## 2. Problem statement
 
-Existing tools split unhelpfully along one axis: pure logic tools (Pandora, Carnap, Logitext) handle natural deduction but no arithmetic; pure math tools (SymPy, Mathematica, Wolfram Alpha) handle numbers but no inference; LLMs do both unreliably with no checkable trace.
+The existing landscape is split unhelpfully:
 
-HLMR fills the gap: a single engine that handles **proofs containing unknowns**, where the unknowns may be categorical (resolved by unification) or numeric (resolved by SMT or algebra), and where the output is always a proof the kernel has checked.
+- **Pure logic tools** (Pandora, Carnap, Logitext) handle natural
+  deduction but no arithmetic and no goal-directed search.
+- **Pure math tools** (SymPy, Mathematica, Wolfram Alpha) handle
+  numbers but produce no inference trace.
+- **Logic programming** (Prolog, λProlog) does goal-directed search
+  but doesn't render proofs in a form a student or reviewer can audit
+  step by step.
+- **Frontier LLMs** do everything plausibly and nothing checkably.
+  Soundness is not a property they have.
 
-Concrete example of the differentiating problem:
+HLMR fills a specific gap: a single engine where (a) the user can write
+domain knowledge as Horn clauses, (b) goals can contain unknowns, (c)
+proofs are produced in a presentation-friendly ND format, and (d) every
+proof is mechanically checked by a kernel that's small enough to audit.
+
+The motivating example, demonstrable by milestone 2:
 
 ```
-Premises:
-  1. ∀x. (Prime(x) ∧ x > 2) → Odd(x)
-  2. Prime(?p)
-  3. ?p > 2
-  4. ?p < 6
-  5. ¬Odd(4)
+KB:
+  prime(2). prime(3). prime(5). prime(7).
+  greater_than(?P, 2).
+  less_than(?P, 6).
+  not_equal(?P, 4).
 
-Goal: find ?p
+Query:
+  ?- prime(?P), greater_than(?P, 2), less_than(?P, 6), not_equal(?P, 4).
+
+Answer:
+  ?P = 5.
+  Proof: 11 lines, kernel-verified.
 ```
 
-A pure logic tool can't reason about `>`. A pure SMT tool can find `?p ∈ {3, 5}` but produces no proof. HLMR returns: `?p = 3` or `?p = 5`, with a kernel-checked derivation showing why each is consistent and why `?p = 4` is not.
+Pure logic tools can't reason about the inequalities. Pure SMT tools
+produce no proof. LLMs produce something that looks like a proof and
+isn't checked. HLMR returns a witness *and* a kernel-checked
+derivation.
 
 ---
 
-## 3. Architectural commitments
+## 3. What this is, and what it is not
 
-These are non-negotiable design decisions that shape every phase. Anything contradicting them is wrong by construction.
+This section exists because the project's framing has drifted toward
+larger ambitions in conversation. Anchor here.
 
-**The kernel is the only trusted component.** Everything else — UI, parser, unification engine, SMT bridge, tactic engine, future neural suggester — can be buggy without compromising soundness, *as long as every claimed proof is run through the kernel*. The kernel must be small enough to read in one sitting and exhaustively tested.
+### 3.1 What this is
 
-**The IR is the single bus between components.** Every module reads and writes the same formula and proof types. No module has its own private representation. Every proof is JSON-serialisable.
+- A theorem prover for a **decidable, explicitly-bounded fragment** of
+  first-order logic with equality, plus linear arithmetic and finite
+  domains in milestone 2.
+- A tool whose **knowledge base is hand-curated**. Adding new domain
+  axioms is part of using the system. Domain libraries grow over time.
+- A pedagogical tool. The first users are people learning logic,
+  proof techniques, or constraint reasoning. Education is the primary
+  market; research-grade automation is downstream.
+- A system designed for **soundness**. False negatives (failing to find
+  a proof that exists) are acceptable. False positives (claiming a
+  proof when one is invalid) are catastrophic and the architecture
+  exists to prevent them.
 
-**Construction and verification are separated.** Different phases vary *how* proofs are built (by hand, by unification, by tactic search). They do not vary *how proofs are checked*. The kernel is invariant across phases.
+### 3.2 What this is not
 
-**The supported fragment is decidable and explicit.** First-order logic with equality, linear arithmetic over ℤ and ℚ, finite-domain constraints. Problems outside this fragment are rejected with a clear message, never attempted silently.
+- **Not an LLM**, and not trying to be one. There is no transformer.
+  There is no training corpus in the foundation-model sense. There may,
+  much later, be a small specialised model that re-ranks candidate
+  clauses during automated search — but only if it earns its place
+  empirically, and the system must work fully without it.
+- **Not a complete formalisation of mathematics.** Gödel's incompleteness
+  theorems guarantee no such system exists for any consistent theory
+  strong enough to express arithmetic. The system proves theorems
+  *within* whatever knowledge base has been encoded. It does not
+  enumerate truth.
+- **Not a Lean or Coq replacement.** Mathlib has spent a decade
+  formalising mathematics; HLMR will not catch up. The scope is
+  intentionally narrower.
+- **Not a frontier benchmark contender.** MATH and GSM8K are explicitly
+  not target benchmarks; they are dominated by LLMs and are the wrong
+  shape for this system. Target benchmarks are listed in §10.
+- **Not a natural-language system.** The user types Prolog-flavoured
+  syntax. NL parsing is, at best, a milestone 4+ extension.
 
-**Solver dispatch is explicit.** When unknowns need to be solved, the dispatcher chooses among unification, Z3, and SymPy by rule, not by heuristic. The choice is logged. Disagreements between solvers are bugs, and the kernel arbitrates.
-
-**Soundness over completeness.** The system may fail to prove things it could in principle prove. It must never claim to have proved something it has not. False negatives are acceptable; false positives are catastrophic.
-
-**Logging from day one.** Every proof step the user takes (phases 1, 2) and every step the system takes (phase 3) is logged with full proof state. This corpus is the asset that enables a future neural suggester. Cheap to add now, expensive to add later.
+If a feature request can only be justified by appeal to one of the
+above framings, push back.
 
 ---
 
-## 4. Scope
+## 4. Architectural commitments
 
-### 4.1 In scope for V1 (across all four phases)
+These are non-negotiable. Every milestone's design must respect them.
 
-- Propositional logic with all standard connectives (∧, ∨, ¬, →, ↔, ⊥)
-- First-order logic with quantifiers (∀, ∃) over a single sort initially
-- Equality reasoning (reflexivity, substitution)
-- Linear arithmetic over ℤ and ℚ
-- Finite-domain constraints (variables ranging over enumerated sets)
-- Unknowns (metavariables) of categorical and numeric types
-- Fitch-style natural deduction with explicit assumption boxes
-- Terminal-based interaction (CLI/REPL); HTML+JS static page is acceptable but not required
+**The kernel is the only trusted component.** Search engines, unifiers,
+SMT bridges, parsers, REPL UIs, future learned rankers — all of these
+can have bugs without compromising soundness, *as long as every claimed
+proof is run through the kernel*. The kernel is small enough to read
+in a sitting and is exhaustively tested. It does not change casually.
 
-### 4.2 Out of scope for V1
+**The IR is the single bus.** Every component reads and writes the same
+formula and proof types. No component has its own private representation.
+Every proof is JSON-serialisable.
 
-The following are explicitly not goals. Designs that hint at supporting them later are fine; designs that require them now are wrong.
+**Construction and verification are separated.** Different milestones
+vary *how* proofs are constructed (manual, SLD, automated search).
+They do not vary *how proofs are checked*. The kernel is invariant.
 
-- Non-linear real arithmetic
-- Calculus (limits, derivatives, integrals)
-- Higher-order logic, dependent types
-- Set theory beyond finite sets
-- Induction over arbitrary inductive types (induction over ℕ may be added in phase 3 if cheap)
-- Geometry diagrams
-- Probability theory
-- General theorem proving over Mathlib-scale libraries
-- Training a large neural model
-- AutoML / data-predictability reasoning
-- Multi-user accounts, persistence beyond local files, web hosting
+**The supported fragment is explicit and decidable.** First-order logic
+with equality, linear arithmetic over ℤ and ℚ, finite-domain constraints,
+and symbolic algebraic equations dispatched to SymPy. Problems outside
+this fragment are rejected with a clear message, never attempted
+silently.
 
-### 4.3 Target benchmarks
+**Solver dispatch is explicit, not heuristic.** When an unknown needs
+to be resolved, the dispatcher chooses among unification, Z3, and SymPy
+by classification rule. The choice is logged. Disagreements between
+solvers are bugs; the kernel arbitrates.
 
-Listed in increasing order of difficulty. Phase 3 success is measured against these.
+**Soundness over completeness.** Every reported "solved" result has a
+kernel-verified proof. No exceptions.
 
-- **FOLIO** — first-order logic NL problems
-- **ProofWriter** — multi-step rule reasoning
-- **LogiQA** — logical reasoning multiple choice
-- **Zebra-style puzzles** — finite-domain constraint satisfaction with logical clues
-- **Custom hybrid suite** — problems combining FOL inference with linear arithmetic and unknowns, constructed in-house
-
-Pure-arithmetic benchmarks (MATH, GSM8K) are explicitly excluded. They are dominated by frontier LLMs and are not where this system is differentiated.
+**Logging from day one.** Every user step (manual mode) and every solver
+step (automated mode) is logged with full state. This is the corpus
+that may later inform learned components. Cheap to add now, expensive
+to add later.
 
 ---
 
@@ -117,450 +163,383 @@ Pure-arithmetic benchmarks (MATH, GSM8K) are explicitly excluded. They are domin
 hlmr/
 ├── pyproject.toml
 ├── README.md
-├── PRD.md                         (this document)
-├── src/
-│   └── hlmr/
-│       ├── __init__.py
-│       ├── ir/                    Phase 0
-│       │   ├── __init__.py
-│       │   ├── formula.py         Formula classes + structural ops
-│       │   ├── proof.py           Proof, ProofLine, scope/box tracking
-│       │   ├── justification.py   Rule application records
-│       │   └── serialise.py       JSON in/out
-│       ├── kernel/                Phase 0
-│       │   ├── __init__.py
-│       │   ├── rules.py           One function per ND rule
-│       │   ├── check.py           check_proof(), check_step()
-│       │   └── errors.py          Structured rule-violation errors
-│       ├── parse/                 Phase 1+
-│       │   ├── __init__.py
-│       │   └── formula_parser.py  Lark-based formula syntax parser
-│       ├── repl/                  Phase 1
-│       │   ├── __init__.py
-│       │   └── interactive.py     Interactive proof-building REPL
-│       ├── unify/                 Phase 2
-│       │   ├── __init__.py
-│       │   ├── metavar.py         Metavariable representation in IR
-│       │   ├── unifier.py         First-order unification with occurs check
-│       │   └── dispatch.py        Unification / Z3 / SymPy dispatcher
-│       ├── solvers/               Phase 2
-│       │   ├── __init__.py
-│       │   ├── z3_bridge.py       IR → Z3, model extraction → IR
-│       │   └── sympy_bridge.py    IR → SymPy, results → IR
-│       ├── tactics/               Phase 3
-│       │   ├── __init__.py
-│       │   ├── tactic.py          Tactic interface
-│       │   ├── prop.py            Propositional tactics
-│       │   ├── fol.py             FOL tactics
-│       │   ├── arith.py           Arithmetic tactics
-│       │   └── search.py          Top-level search loop
-│       ├── log/                   Phase 1+
-│       │   ├── __init__.py
-│       │   └── recorder.py        Proof-step event logging
-│       └── cli.py                 Click/Typer entrypoint
-├── tests/
-│   ├── kernel/
-│   ├── ir/
-│   ├── parse/
-│   ├── repl/
-│   ├── unify/
-│   ├── solvers/
-│   └── tactics/
-├── proofs/                        Sample/example proofs in JSON
-├── benchmarks/                    Imported benchmark sets
-└── corpus/                        Logged proof traces (gitignored)
+├── PRD.md                         (this document — canonical)
+├── PRD_milestone_1.md             (M1 implementation spec)
+├── src/hlmr/
+│   ├── ir/                        IR: formula, proof, justification, KB, meta
+│   ├── kernel/                    Trusted core (M0)
+│   ├── unify/                     M1
+│   ├── solve/                     M1 (manual SLD), M3 (auto search)
+│   ├── solvers/                   M2 (Z3, SymPy bridges)
+│   ├── dispatch/                  M2 (constraint classification, routing)
+│   ├── parse/                     M1 (Lark grammar, parser)
+│   ├── repl/                      M1
+│   ├── log/                       M1
+│   ├── tactics/                   M3
+│   └── cli.py
+├── tests/                         (mirrors src/ structure)
+├── proofs/                        Example proofs by milestone
+├── examples/                      Example knowledge bases
+├── benchmarks/                    Imported benchmark sets (M3)
+└── corpus/                        Logged sessions (gitignored)
 ```
 
-Key constraints on this layout:
+Hard structural rules:
 
-- The `kernel/` module imports only from `ir/`. It must have zero external dependencies. This is enforceable via a CI check.
-- Every other module imports from `kernel/` and `ir/`, never replicates rule logic.
-- `solvers/` is the only place where Z3 and SymPy are imported. Other modules go through `solvers/` interfaces.
+- **`kernel/` imports only from `ir/` and stdlib.** CI-enforced.
+- **No module replicates rule logic.** The kernel is the only place ND
+  rule semantics are implemented.
+- **`solvers/` is the only place Z3 and SymPy are imported.** Other
+  modules go through its interface.
 
 ---
 
-## 6. Phase 0 — kernel and IR
+## 6. Scope (across all V1 milestones)
 
-### 6.1 Goal
+### 6.1 In scope for V1
 
-Build the minimum trusted core: a data type for formulas, a data type for proofs, a function that decides whether a proof is valid, and a CLI that runs that function on a JSON file.
+- Propositional logic with all standard connectives (∧, ∨, ¬, →, ↔, ⊥)
+- First-order logic with quantifiers (∀, ∃) over a single sort
+- Equality reasoning (reflexivity, substitution)
+- Linear arithmetic over ℤ and ℚ (M2)
+- Finite-domain constraints (M2)
+- Symbolic algebraic equations dispatched to SymPy (M2)
+- Unknowns (metavariables), resolved by unification, Z3, or SymPy
+- Fitch-style natural deduction with explicit assumption boxes
+- Horn-clause knowledge bases
+- Manual mode (user picks clauses) and automated mode (system searches)
+- Terminal CLI/REPL
 
-No interactivity. No proof construction. No solving. No parsing of natural language. Pure library plus thin CLI.
+### 6.2 Out of scope for V1
 
-### 6.2 IR specification
+- Non-linear real arithmetic (beyond what SymPy handles for specific
+  algebraic equations)
+- Calculus (limits, derivatives, integrals)
+- Higher-order logic, dependent types
+- Set theory beyond finite sets
+- Induction over arbitrary inductive types (induction over ℕ may be
+  added in M3 if it falls out of the search engine cheaply)
+- Geometry, probability theory
+- Multi-sort first-order logic (single sort suffices for M1–M3)
+- Negation-as-failure or other non-classical extensions to Horn clauses
+- Multi-user accounts, web hosting, persistent server infrastructure
+- Static HTML/JS frontend (deferred indefinitely; terminal is sufficient)
+- Training a foundation-scale neural model
+- Natural-language input parsing
 
-**Formula classes** (in `ir/formula.py`):
+### 6.3 What this means for the user
 
-- `Var(name: str)` — variable, e.g. `x`, `y`
-- `Const(value)` — constant, including numeric literals
-- `Function(name: str, args: tuple[Term, ...])` — uninterpreted function term
-- `Atom(predicate: str, args: tuple[Term, ...])` — atomic formula
-- `Equals(lhs: Term, rhs: Term)` — equality (special-cased for kernel)
-- `And`, `Or`, `Implies`, `Iff` — binary connectives
-- `Not` — unary negation
-- `Bot` — falsum (⊥)
-- `ForAll(var: str, body: Formula)`, `Exists(var: str, body: Formula)` — quantifiers
+A user can:
 
-All formula classes are frozen dataclasses with structural `__eq__` and `__hash__`. Pretty-printing supports both ASCII (`->`, `&`, `|`, `~`, `forall`, `exists`) and Unicode (`→`, `∧`, `∨`, `¬`, `∀`, `∃`).
+- Write Prolog-flavoured Horn clauses and queries
+- Drive proofs manually, picking clauses to resolve goals against
+- (M2 onward) Mix logic with linear arithmetic and finite domains
+- (M3 onward) Ask the system to search for proofs automatically
+- Export every proof as JSON and replay it through the kernel
 
-**Proof classes** (in `ir/proof.py`):
+A user cannot:
 
-- `ProofLine(number: int, formula: Formula, justification: Justification, box_depth: int)`
-- `Proof(lines: tuple[ProofLine, ...], goal: Formula | None)`
-
-Boxes are tracked by depth and by start/end markers. The proof is a flat list; box structure is recovered by walking depth changes. This keeps serialisation trivial.
-
-**Justification classes** (in `ir/justification.py`):
-
-- `Premise()` — given as input
-- `Assumption()` — opens a new box
-- `RuleApplication(rule_name: str, refs: tuple[int, ...], extra: dict)` — references previous lines by number; `extra` carries rule-specific data (e.g. the witness term for ∃-elim)
-
-**Serialisation** (in `ir/serialise.py`):
-
-A JSON round-trip: `to_json(proof) -> str` and `from_json(s: str) -> Proof`. The format must be human-readable enough to hand-edit. Versioned schema (`"hlmr_proof_version": 1`).
-
-### 6.3 Rules to implement
-
-Sixteen rules total. Each is one function in `kernel/rules.py` with signature `check(line, proof, env) -> Result`.
-
-**Propositional (10):**
-
-| Rule | Notation | What it does |
-|---|---|---|
-| ∧-intro | `andI` | from P, Q derive P ∧ Q |
-| ∧-elim-L | `andE_L` | from P ∧ Q derive P |
-| ∧-elim-R | `andE_R` | from P ∧ Q derive Q |
-| ∨-intro-L | `orI_L` | from P derive P ∨ Q |
-| ∨-intro-R | `orI_R` | from Q derive P ∨ Q |
-| ∨-elim | `orE` | case analysis on P ∨ Q |
-| →-intro | `impI` | discharge assumption |
-| →-elim | `impE` | modus ponens |
-| ¬-intro | `notI` | from assumption P deriving ⊥, conclude ¬P |
-| ⊥-elim | `botE` | ex falso quodlibet |
-
-Plus reiteration (copy a line from an enclosing scope) and ↔-intro/elim (derived but useful enough to be primitive).
-
-**First-order (4):**
-
-| Rule | Notation | What it does |
-|---|---|---|
-| ∀-intro | `forallI` | with eigenvariable side condition |
-| ∀-elim | `forallE` | instantiate at any term |
-| ∃-intro | `existsI` | from P[t/x] derive ∃x. P |
-| ∃-elim | `existsE` | with eigenvariable side condition |
-
-**Equality (2):**
-
-| Rule | Notation | What it does |
-|---|---|---|
-| =-refl | `eqRefl` | derive t = t for any t |
-| =-subst | `eqSubst` | from t = u and P[t/x] derive P[u/x] |
-
-Each rule function returns either `Verified` or a structured error like `WrongFormulaShape(expected, got)`, `OutOfScopeReference(line, current_depth)`, `EigenvariableViolation(var)`, etc. No string error messages — errors are typed.
-
-### 6.4 Scope and side conditions
-
-Box scoping must be enforced rigorously. A line at depth `d` may reference earlier lines only if those lines are at depth `≤ d` *and* every box they belong to is still open at the current line. The kernel verifies this on every rule application that takes references.
-
-Eigenvariable conditions for ∀-intro and ∃-elim must be checked: the eigenvariable must not appear free in any premise, in any open assumption, or in the conclusion of the relevant introduction.
-
-These are the easy-to-get-wrong corners. They must have dedicated tests.
-
-### 6.5 CLI
-
-```
-hlmr check path/to/proof.json
-```
-
-Outputs either `Verified` or a structured error pointing at the offending line and the reason. Exit code 0 for verified, 1 for failed, 2 for malformed input.
-
-### 6.6 Tests
-
-Three test suites, all required:
-
-1. **Soundness suite.** A corpus of valid proofs that must check. Cover every rule. Cover nested boxes at depth ≥ 3. Cover eigenvariable corner cases.
-2. **Unsoundness suite.** A corpus of *invalid* proofs that must fail with specific errors. Each test asserts the *type* of error, not just that it failed. This is the regression suite that protects soundness forever.
-3. **Property tests.** Using Hypothesis: random valid proofs round-trip through JSON; checker is deterministic; random formula equality is reflexive/symmetric/transitive.
-
-### 6.7 Definition of done for phase 0
-
-- All 16 rules implemented and unit-tested.
-- Soundness and unsoundness suites pass with ≥ 95% line coverage of `kernel/`.
-- JSON round-trip tested with Hypothesis.
-- `hlmr check` CLI works end-to-end on at least 20 hand-written example proofs in `proofs/`.
-- `kernel/` has zero imports outside `ir/` and the standard library (CI-enforced).
-- A short architectural note in `src/hlmr/kernel/README.md` explaining the kernel's contract for future contributors.
-
-### 6.8 Dependencies introduced
-
-- `pytest`, `hypothesis` (test only)
-- Standard library only for `kernel/` and `ir/`
-
-No Z3, no SymPy, no parser library yet.
+- Type natural-language problems
+- Get reasoning over non-linear or transcendental functions (beyond
+  what SymPy does for specific cases the dispatcher routes)
+- Get fast answers on problems outside the supported fragment — the
+  system will reject them rather than guess
 
 ---
 
-## 7. Phase 1 — manual ND tool (terminal)
+## 7. Milestones
 
-### 7.1 Goal
+### 7.1 Milestone overview
 
-Make the kernel usable interactively. The user types rule applications at a REPL; the kernel checks each one live; the proof grows by one line at a time.
+| Milestone | Status | Adds | Demo |
+|---|---|---|---|
+| **0** | **Done** | Kernel + IR + CLI proof checker | Hand-built proofs verify |
+| **1** | Spec written (`PRD_milestone_1.md`) | Horn-clause KB, unification, manual SLD, ND renderer, REPL, parser, logging | Kinship, Zebra, simple FOL |
+| **2** | Spec to write | Z3 + SymPy bridges, dispatcher | Linear arithmetic, quadratics |
+| **3** | Spec to write | Automated search, optional learned ranker | FOLIO, ProofWriter, LogiQA |
+| **4+** | Optional | Domain libraries (intro logic, basic number theory, etc.) | Domain-specific demos |
 
-This is the Pandora-equivalent. Pedagogically it should feel like Pandora; structurally it is a thin REPL over the phase 0 kernel.
+Each milestone is shippable on its own. Each strictly extends its
+predecessor. The kernel does not change between M0 and M3 (one
+defense-in-depth check is added in M1 for `Meta` rejection).
 
-### 7.2 Interaction model
+### 7.2 Milestone 0 — kernel and IR (done)
 
-Construction-time checking, not post-hoc. Every rule application is checked immediately and rejected immediately if invalid. The user always sees a verified partial proof.
+Delivered in the existing prototype:
 
-REPL commands (minimum set):
+- 22 ND rules: andI/E_L/E_R, orI_L/I_R/E, impI/E, notI/E, botE,
+  iffI/E_L/E_R, reit, PBC, forallI/E, existsI/E, eqRefl, eqSubst
+- Frozen-dataclass IR with structural equality
+- Capture-avoiding substitution
+- Box scoping with accessibility and discharge checks
+- Eigenvariable side conditions on forallI and existsE
+- JSON serialisation with versioned schema
+- 57 passing tests (soundness, unsoundness, substitution, round-trips)
+- CLI: `python -m hlmr check <proof.json>` and `... show`
 
-```
-goal <formula>            set the goal
-premise <formula>         add a premise
-assume <formula>          open a new assumption box
-discharge                 close current box (only valid if rule chosen needs it)
-apply <rule> <args>       apply rule, e.g. apply andI 2 3
-undo                      remove last line
-show                      pretty-print current proof state
-save <path>               write proof to JSON
-load <path>               replace proof state from JSON
-verify                    re-run kernel check on full proof (sanity)
-help                      list commands and rules
-quit
-```
+The kernel imports only from `ir/` and stdlib. This is CI-enforceable.
 
-Pretty-printing shows a Fitch-style indented proof with line numbers, box bars, and the current goal. ASCII by default; `--unicode` flag for boxed Unicode rendering.
+### 7.3 Milestone 1 — manual solver with unknowns
 
-### 7.3 Formula parser
+See `PRD_milestone_1.md` for the full spec. Summary:
 
-Phase 1 needs a parser for formulas typed at the prompt. Use Lark with an explicit grammar. Accept both ASCII and Unicode operators. No NL parsing yet.
+- IR additions: `Meta` term type, `Clause`, `KnowledgeBase`
+- Modules: `unify/`, `solve/sld.py`, `solve/render.py`, `parse/`,
+  `repl/`, `log/`
+- Manual mode: user states a goal containing unknowns, system shows
+  candidate clauses at each step, user picks
+- Output: kernel-verified ND proof + final substitution
+- Demos: kinship, syllogism, small Zebra puzzle, even-via-Peano
+- One kernel change permitted: top-of-`check_proof` rejection of any
+  formula containing a `Meta`
 
-Parser module: `parse/formula_parser.py`. Returns IR formula objects. Errors are user-friendly, not stack traces.
+No arithmetic. No automated search.
 
-### 7.4 Logging
+### 7.4 Milestone 2 — arithmetic and dispatch
 
-Every command the user runs is logged to `corpus/<session-id>.jsonl` with timestamp, command, resulting proof state hash, and (for `apply` commands) the rule, refs, and whether the kernel accepted it. This is the seed of the future training corpus. Logging is on by default; `--no-log` flag to disable.
+To be specified in `PRD_milestone_2.md` near end of M1. Summary of
+intent:
 
-### 7.5 Definition of done for phase 1
+- Add Z3 and SymPy bridges in `solvers/`
+- Add a dispatcher in `dispatch/` that classifies constraints and
+  routes them: unification for first-order, Z3 for linear arithmetic
+  and finite domains, SymPy for symbolic algebraic equations
+- Add metavariable types: `Categorical`, `Integer`, `Rational`,
+  `FiniteDomain(values)` — replacing M1's single untyped category
+- Outcome classification: `UniqueSolution`, `MultipleSolutions`,
+  `InfinitelyManySolutions`, `NoSolution`, `Underdetermined`,
+  `OutsideFragment`
+- Demos: the §2 motivating example; `x² - 5x + 6 = 0` returns
+  `{2, 3}` with kernel-checked verification (witness checking, not
+  exhaustiveness — see §11)
 
-- REPL supports all commands listed in 7.2.
-- A user can complete the standard intro-logic suite end-to-end: De Morgan's laws, contraposition, distributivity, basic FOL exercises, basic equality reasoning. At least 30 such exercises pass.
-- Every step is kernel-checked. There is no path that constructs an unverified proof line.
-- Logging produces well-formed JSONL.
-- REPL has a help system and reasonable error messages.
+The dispatcher is the high-risk module of M2 and warrants Opus design
+(see §9).
 
-### 7.6 Dependencies introduced
+### 7.5 Milestone 3 — automated search
 
-- `lark` (formula parser)
-- `click` or `typer` (CLI scaffolding)
-- `rich` (proof pretty-printing) — optional but nice
+Tactic engine, not classical proof search. Hand-written tactics propose
+sequences of rule applications and clause selections. Search is
+iterative deepening over a tactic priority list, with a per-attempt
+time budget. The kernel checks every state.
 
----
+Optional: a small learned ranker for tactic priority, trained on the
+corpus collected from M1 and M2. Gated on having ≥5,000 logged proof
+steps. The system must work fully without it.
 
-## 8. Phase 2 — natural deduction with unknowns
+Benchmark target thresholds:
 
-### 8.1 Goal
+- Propositional intro-logic: ≥80%
+- Curated FOL subset: ≥50%
+- Zebra-style finite-domain: ≥70% within 30s each
+- Hybrid logic-plus-linear-arithmetic: ≥60%
 
-Allow proofs and premises to contain metavariables (unknowns). Add a unification/SMT/algebra layer that proposes values for those unknowns. Re-check the resulting fully-instantiated proof with the kernel.
+Every reported success has a kernel-verified proof.
 
-The kernel does not change. It still only sees ground (instantiated) formulas. The new machinery sits beside it.
+### 7.6 Milestone 4+ (optional, deferred)
 
-### 8.2 Metavariables in IR
-
-Add a single new term type: `Meta(name: str, type: MetaType)` where `MetaType` ∈ `{Categorical, Integer, Rational, FiniteDomain(values)}`. The kernel rejects proofs containing un-resolved metavariables. The dispatcher's job is to resolve them, then hand the instantiated proof to the kernel.
-
-### 8.3 Solver dispatch
-
-Explicit policy, no heuristic guessing. In `unify/dispatch.py`:
-
-1. Collect all constraints involving unknowns from the proof's premises, assumptions, and goal.
-2. Classify each constraint:
-   - Pure first-order with categorical metas → unification
-   - Linear (in)equalities over ℤ or ℚ → Z3
-   - Symbolic algebraic equations → SymPy
-   - Mixed → decompose where possible; if not decomposable cleanly, fail with a clear "unsupported mixed constraint" message rather than guess.
-3. Run the appropriate solver(s). Collect candidate values.
-4. For each candidate assignment, instantiate the proof and run the kernel.
-5. Return: the set of assignments that produce kernel-verified proofs, together with those proofs.
-
-Solver disagreements (e.g. Z3 says SAT but the resulting instantiated proof fails the kernel) are bugs and should crash loudly during development. The kernel is the arbiter.
-
-### 8.4 Unification module
-
-First-order unification with occurs check. Standard Robinson algorithm. Scope-aware: a metavariable introduced inside a box may only be resolved using terms accessible from that scope.
-
-Before implementing, spend a day reading λProlog and the "uniform proofs" results (Miller, Nadathur), and the Imperial logic group's papers on Prolog-in-Pandora (Broda, Hogger). The risk of informally inventing scoping rules is real and these papers cover the corner cases.
-
-### 8.5 Z3 and SymPy bridges
-
-- `solvers/z3_bridge.py`: IR → Z3 expression, Z3 model → IR term. Supports linear arithmetic, equalities, finite domains.
-- `solvers/sympy_bridge.py`: IR → SymPy, solve(), back to IR. For algebraic simplification and equation solving.
-
-Both bridges have round-trip property tests: `from_z3(to_z3(f)) == f` for every formula in the supported fragment.
-
-### 8.6 Outcome classification
-
-The dispatcher returns one of:
-
-- `UniqueSolution(assignment, proof)`
-- `MultipleSolutions(list[(assignment, proof)])` — finite enumeration only
-- `InfinitelyManySolutions(parametric_form, sample_proof)`
-- `NoSolution(why)` — with a contradiction proof when possible
-- `Underdetermined(free_metas)`
-- `OutsideFragment(reason)`
-
-These map cleanly to the outcome taxonomy in the original notes (§11) and are user-visible in the REPL output.
-
-### 8.7 REPL extensions
-
-New commands:
-
-```
-meta <name> <type>        introduce a metavariable
-solve                     run the dispatcher to resolve all unknowns
-solutions                 list all assignments found
-```
-
-### 8.8 Definition of done for phase 2
-
-- Metavariables work in formulas at all nesting levels.
-- The "find ?p" example from §2 works end-to-end.
-- A small benchmark of 20 hybrid logic+arithmetic problems passes.
-- Outcome classification covers all six cases with tests.
-- Bridge round-trip tests pass with Hypothesis.
-
-### 8.9 Dependencies introduced
-
-- `z3-solver`
-- `sympy`
+Domain libraries. Hand-encoded knowledge bases for intro logic, basic
+number theory (over what M2 supports), finite group theory, simple
+combinatorics. Each library is a directory of `.pl`-style clause
+files and a curated set of demo queries. This is the part that takes
+years and where Mathlib-style projects live; explicit scoping prevents
+the project from collapsing into one of those.
 
 ---
 
-## 9. Phase 3 — tactic engine
+## 8. Cross-cutting concerns
 
-### 9.1 Goal
+### 8.1 Non-functional commitments
 
-Automate proof construction. The user states a goal; the system finds a proof.
+- **Python 3.12+** throughout
+- **PEP 8**, enforced via `ruff` in CI
+- **Type hints** on every public function and dataclass field; modern
+  syntax (`list[int]`, `X | Y`)
+- **Modular and shallow.** Wrapper classes that delegate one method to
+  another are forbidden. Modules over ~600 lines are split.
+- **Runtime dependencies are listed and minimal.** M1: `lark`,
+  `prompt_toolkit`. M2 adds: `z3-solver`, `sympy`. M3 may add `torch`
+  if and only if the learned ranker is built. Anything else needs
+  explicit approval.
 
-Architectural choice: tactic engine, not classical proof search, not neural search. Tactics are hand-written high-level strategies that propose sequences of rule applications. The kernel still checks every step.
+### 8.2 Testing
 
-### 9.2 Tactic interface
+- `pytest` for unit and integration
+- `hypothesis` for property tests (round-trips, kernel determinism,
+  unifier soundness)
+- Coverage targets: ≥95% on `kernel/`, `unify/`, `solve/sld.py`;
+  ≥85% on renderers and dispatcher; ≥70% on parsers and REPL
+- CI runs the soundness regression suite on every commit. An
+  unsoundness regression is a merge-blocker.
 
-```python
-class Tactic(Protocol):
-    name: str
-    def apply(self, state: ProofState) -> Iterable[ProofState]:
-        """Yield zero or more candidate next states. Each is kernel-verified
-        because the underlying rule applications are checked at construction."""
-```
+### 8.3 Logging
 
-### 9.3 Built-in tactics
+Every interactive session and every benchmark run produces JSONL.
+Schema is versioned and lives in `src/hlmr/log/schema.md`. Logs are
+gitignored. A documented `hlmr export-corpus` command bundles them
+for analysis or training.
 
-Minimum set:
+### 8.4 Documentation
 
-- `auto_prop` — propositional completeness via tableau or DPLL-style search, then reconstruct ND proof
-- `intro` — apply introduction rules until no more apply (→-intro for implications, ∀-intro for universals, etc.)
-- `assumption` — close goal if it matches an available premise/assumption
-- `mp_search` — search for modus ponens chains using available premises
-- `case` — case-split on a disjunction
-- `contra` — proof by contradiction (assume ¬goal, derive ⊥)
-- `omega` — linear arithmetic over ℤ via Z3, then reconstruct ND-style witness
-- `linarith` — linear arithmetic over ℚ
-- `decide_finite` — finite-domain enumeration
+- Each module has a short README explaining its contract
+- The kernel's contract is documented to a higher standard than other
+  modules — it is the trust boundary
+- A user-facing `docs/tutorial.md` walks through the REPL with worked
+  examples by end of M1
 
-### 9.4 Search strategy
+### 8.5 Performance
 
-Top-level loop in `tactics/search.py`: iterative deepening over a tactic priority list, with a per-attempt time budget. Failed searches return a partial proof state and an explanation of what was tried.
+Not an M0/M1/M2 concern. M3 introduces time budgets per tactic and
+per overall proof attempt. No optimisation work before M3 unless
+something is unusably slow.
 
-Soundness invariant: search may fail to find a proof, but every state it returns is kernel-verified.
+### 8.6 Frontend
 
-### 9.5 Optional: learned suggester
-
-If by phase 3 there is enough corpus from phases 1 and 2 (target: ≥ 5,000 proof steps), train a small transformer (target: ≤ 100M parameters) that takes a proof state and predicts the next tactic to try. Insert it as a priority-reorderer in the search loop.
-
-This is optional and gated on corpus size. The system must work fully without it.
-
-### 9.6 Benchmark harness
-
-`benchmarks/` directory contains importers for FOLIO, ProofWriter, LogiQA, and Zebra puzzles. A `hlmr bench <suite>` command runs the system over each problem and reports verified-correctness rate, average solve time, and failure breakdown.
-
-### 9.7 Definition of done for phase 3
-
-- Auto-proves ≥ 80% of an intro-logic propositional suite.
-- Auto-proves ≥ 50% of a curated FOL subset.
-- Solves ≥ 70% of Zebra-style finite-domain puzzles within 30 seconds each.
-- Hybrid suite (logic + linear arithmetic with unknowns): target ≥ 60%.
-- Every reported "solved" problem has a kernel-verified proof. No exceptions.
-
-### 9.8 Dependencies introduced
-
-- Possibly `torch` and `transformers` if the learned suggester is built
-- Otherwise none beyond phase 2
+Terminal only for V1. If a UI becomes desirable, the chosen approach
+is a static HTML+JS page that calls a small local Python server
+exposing the kernel and dispatcher over JSON. Not part of any
+milestone's definition of done.
 
 ---
 
-## 10. Cross-cutting concerns
+## 9. Model selection (high level)
 
-### 10.1 Testing strategy
+Per-milestone PRDs contain detailed model-selection guidance with
+explicit gates. This section is the strategic summary.
 
-- `pytest` for unit and integration tests
-- `hypothesis` for property tests, especially round-trips and kernel determinism
-- Coverage target: ≥ 95% on `kernel/`, ≥ 85% on `ir/`, ≥ 70% on others
-- CI runs the soundness suite on every commit; an unsoundness regression blocks merge
+**Default: Claude Sonnet 4.6.** Routine implementation, tests,
+documentation, day-to-day coding inside an established module.
 
-### 10.2 Logging and corpus
+**Required: Claude Opus 4.7** for these specific kinds of task:
 
-Every interactive session and every benchmark run produces a JSONL log of proof events. The schema is versioned and lives in `src/hlmr/log/schema.md`. Logs are gitignored but a documented "export corpus" command bundles them for training use.
+- **Module-boundary design.** Anything that introduces a new module
+  or changes a module's public interface.
+- **Renderer and translator design.** SLD-to-ND rendering (M1), proof
+  reconstruction from SMT models (M2). These are bridges between
+  representations and the corner cases hide soundness bugs.
+- **Dispatcher design.** Constraint classification logic in M2.
+  Getting it wrong manifests as silent unsoundness.
+- **Search strategy design.** M3's tactic priorities and search
+  invariants.
+- **Knowledge-base axiomatisation.** When encoding domain content
+  (M4+), the choice of axiomatisation matters and is research-flavoured.
 
-### 10.3 Performance
+**The pre-flight rule.** Every Claude Code session begins by stating
+its model. If a session reaches a section gated on Opus while running
+Sonnet, it stops and asks for a model switch rather than proceeding by
+guessing.
 
-Not a phase 0, 1, or 2 concern. Phase 3 introduces time budgets per tactic and per overall proof attempt. No performance work before phase 3 unless something is unusably slow.
-
-### 10.4 Documentation
-
-- Each module has a short README explaining its contract.
-- The kernel's contract is documented to a higher standard than other modules — it is the trust boundary.
-- A user-facing `docs/tutorial.md` walks through the REPL with worked examples by phase 1's end.
-
-### 10.5 Frontend (deferred / optional)
-
-If a UI becomes desirable, the chosen approach is a static HTML+JS page that calls a small local Python server exposing the kernel and dispatcher over JSON. Not required for any phase's definition of done. Listed here so it doesn't get reinvented later.
+The worst-case downside of using Sonnet for a task that wanted Opus is
+not unsoundness — the kernel still catches that — but a design that
+works for the obvious cases and breaks on the corner cases. Recoverable
+but expensive.
 
 ---
 
-## 11. Decisions deferred
+## 10. Target benchmarks
 
-These need answers before the phase that uses them, but not now.
+Listed in increasing difficulty. M3 success is measured against these.
+
+- **FOLIO** — first-order logic NL problems. Adapted to HLMR's
+  Prolog-style input.
+- **ProofWriter** — multi-step rule reasoning.
+- **LogiQA** — logical-reasoning multiple choice.
+- **Zebra-style puzzles** — finite-domain constraint satisfaction.
+- **Custom hybrid suite** — problems combining FOL inference with
+  linear arithmetic and unknowns. Constructed in-house, ~50 problems
+  by end of M2.
+
+Pure-arithmetic benchmarks (MATH, GSM8K) are explicitly excluded.
+They are LLM-dominated and the wrong shape for this system.
+
+---
+
+## 11. Risks
+
+**Kernel soundness bug.** Mitigation: unsoundness regression suite,
+tiny kernel surface, no kernel changes without code review.
+
+**Renderer produces kernel-passing but logically wrong proofs.** The
+kernel checks individual rule applications but not theorem identity.
+Mitigation: per-demo end-to-end tests assert the final line of the
+rendered proof matches the instantiated query. The Opus design step
+for the renderer (M1) is the upstream defence.
+
+**Solver disagreement with the kernel** (Z3 says SAT but the
+instantiated proof fails to check). Mitigation: kernel is arbiter;
+disagreements crash during development, not in production. Bridge
+round-trip property tests.
+
+**Dispatcher misclassifies constraints**, sending a non-linear problem
+to Z3 and getting a confident wrong answer. Mitigation: classification
+is conservative — anything ambiguous is rejected as `OutsideFragment`
+rather than guessed. Property tests cover the boundary cases.
+
+**Scope creep into non-linear arithmetic, set theory, calculus.**
+Mitigation: the `OutsideFragment` outcome is first-class. The dispatcher
+actively rejects.
+
+**SymPy "solved" but exhaustiveness unproven.** Mitigation: the system
+distinguishes "found these witnesses, kernel-verified each one" from
+"proved these are the only witnesses." The latter requires axioms in
+the KB and goes through the proof system; the former is an honest
+weaker claim. Documentation makes this distinction explicit.
+
+**Corpus collection forgotten until too late.** Mitigation: logging is
+in M1's definition of done, not retrofitted later.
+
+**Domain libraries devour the project's time.** Mitigation: M4+ is
+optional and deferred. M1–M3 are the V1 deliverable. Expanding the
+domain library is a separate project that uses the V1 system.
+
+**Model misuse during implementation.** Sonnet implements a section
+that wanted Opus design and silently produces a flawed module.
+Mitigation: per-milestone PRDs put model gates at the top, with
+explicit "stop and ask" instructions.
+
+---
+
+## 12. Decisions deferred
+
+These need answers before the milestone that uses them, but not now.
 
 | Decision | Latest deadline |
 |---|---|
-| Typed vs untyped first-order terms | Before phase 2 |
-| Eigenvariable representation in serialised proofs | Before phase 0 ships |
-| λProlog-style higher-order patterns vs first-order unification only | Before phase 2 |
-| Whether to support ↔ as primitive or derived | Before phase 0 ships |
-| Concrete textual proof format for phase 1 (in addition to JSON) | Before phase 1 ships |
-| Whether to support induction over ℕ in phase 3 | Before phase 3 |
-| Which corpus size triggers the learned suggester | During phase 3 |
+| Typed vs untyped first-order terms | Before M2 |
+| λProlog-style higher-order patterns vs first-order unification only | Before M2 |
+| Whether the dispatcher should be a single classifier or a chain of specialists | Before M2 |
+| How to render M2's SymPy-derived witnesses as ND lines | Before M2 |
+| Tactic interface: protocol, ABC, or plain function | Before M3 |
+| Whether to support induction over ℕ in M3 | During M3 |
+| Whether the corpus is large enough to warrant the learned ranker | Late M3 |
+| Domain library structure and curation policy | Before M4 |
 
 ---
 
-## 12. Risks
+## 13. Document conventions
 
-**Kernel soundness bug.** Mitigation: unsoundness regression suite, tiny kernel surface, no kernel changes without code review.
-
-**Scope creep into non-linear arithmetic or higher-order logic.** Mitigation: the "outside fragment" outcome is first-class and the parser/dispatcher actively rejects.
-
-**Unification scoping bugs in phase 2.** Mitigation: read the literature first, dedicated test suite for nested-box unknowns.
-
-**Z3/SymPy disagreement with the kernel.** Mitigation: kernel is the arbiter; disagreements crash during development; bridge round-trip property tests.
-
-**Phase 3 over-promises.** Mitigation: the learned suggester is optional; tactic engine is the deliverable; benchmarks have explicit success thresholds rather than "as well as possible."
-
-**Corpus collection forgotten until too late.** Mitigation: logging is built into phase 1 from day one, not added later.
+- `PRD.md` (this document) is canonical at the strategic level. It
+  changes infrequently and only with deliberate review.
+- `PRD_milestone_<n>.md` is the implementation spec for milestone *n*.
+  It is written near the start of work on that milestone and is the
+  document Claude Code should read before implementing.
+- Per-milestone PRDs may not contradict this document. If a per-milestone
+  PRD wants to change something at the strategic level, this document
+  is updated first.
+- Both kinds of document include explicit model-selection guidance.
 
 ---
 
-## 13. Project instruction recap
+## 14. Provenance and credit
 
-The Claude Project instructions encode the architectural commitments above. Any plan that contradicts them — training a large neural model, competing on MATH/GSM8K, promising general theorem proving, treating non-kernel output as trusted — should be pushed back on.
+The project's intellectual roots are in Pandora-style natural deduction
+tools (Imperial College) and λProlog-style proof-as-search systems.
+The differentiating contribution is the integration: Prolog-style
+goal-directed search over a user-curated knowledge base, presenting its
+output as Fitch ND, with a small kernel as the only trusted component,
+and an explicit fragment boundary that includes linear arithmetic via
+SMT and symbolic algebra via SymPy.
+
+The framing has explicitly been kept narrow. The project is not a
+general mathematician, not an LLM, not a complete formalisation system.
+It is a focused, sound, extensible reasoner.
