@@ -1,17 +1,18 @@
 # HLMR Milestone 1 — Manual Solver with Unknowns
 
 **Status:** Draft v1
-**Supplements:** `PRD.md` (canonical project spec, do not contradict)
+**Supplements:** `prd.md` (canonical project spec, do not contradict)
 **Last updated:** 2026-05-01
-**Phase 0 status:** done — kernel, IR, CLI proof checker, 57 passing tests
+**Predecessor milestone:** M0 — see `prd_milestone_0.md`. M1 work
+should not begin until M0 is complete and its test suite is green.
 
 ---
 
 ## 0. Pre-flight check — read this first, every session
 
 **Before writing any code, state which Claude model you are running as.**
-This PRD assigns work to specific models. Implementing the wrong section in
-the wrong model produces work that has to be redone.
+This PRD assigns work to specific models. Implementing the wrong section
+in the wrong model produces work that has to be redone.
 
 - **Claude Sonnet 4.6** — implements most of this milestone. Default.
 - **Claude Opus 4.7** — required for design work on the SLD-to-ND renderer
@@ -26,11 +27,25 @@ If you are Opus 4.7 working on a `[SONNET 4.6 — IMPLEMENTATION]` section,
 that's fine but wasteful — the user can downgrade once the design is
 locked.
 
+**Verify M0 is in place before starting M1:**
+
+1. State your model.
+2. Confirm `src/hlmr/kernel/` exists and contains `check.py`,
+   `rules.py`, `scope.py`, `errors.py`.
+3. Run the M0 test suite: `pytest`. All M0 tests must pass.
+   If they don't, M1 work is blocked until M0 is fixed.
+4. Read this entire document before writing any code.
+5. Then propose the implementation order to the user.
+
+**Do-not-invent rule.** Do not claim a command succeeded without
+showing its output. Do not claim a test passed without running it.
+Do not claim a module exists without listing the directory.
+
 ---
 
 ## 1. Executive summary
 
-Milestone 1 turns the phase 0 kernel into a usable manual theorem prover
+Milestone 1 turns the M0 kernel into a usable manual theorem prover
 over a Prolog-style knowledge base, where queries may contain unknowns
 and the system finds bindings under user direction.
 
@@ -38,15 +53,15 @@ The differentiating capability: the user states a goal containing
 unknowns (e.g. `?- ancestor(?X, alice).`), the system holds open every
 applicable clause in the knowledge base, the user picks which clause to
 resolve against at each step, the unifier produces bindings, and the
-final result is rendered as a Fitch-style natural-deduction proof which
-the existing kernel checks.
+final result is rendered as a Fitch-style natural-deduction proof
+which the M0 kernel checks.
 
 What this milestone does not do: arithmetic comparisons, automated
 search, neural anything. Those are milestones 2 and 3. The first
 demos are kinship relations, simple syllogisms, type-system puzzles,
 Zebra-style logic puzzles. **No quadratics, no `<`, no `>`.** Math
-problems with arithmetic constraints arrive in milestone 2 with Z3 and
-SymPy.
+problems with arithmetic constraints arrive in milestone 2 with Z3
+and SymPy.
 
 ---
 
@@ -54,12 +69,14 @@ SymPy.
 
 | Milestone | Adds | Demoable on |
 |---|---|---|
-| **0 (done)** | kernel, IR, CLI checker | hand-built proofs verify |
+| **0** | kernel, IR, CLI checker | hand-built proofs verify |
 | **1 (this)** | KB, unification, manual SLD, ND renderer, REPL, parser | kinship, Zebra, simple FOL |
 | **2** | Z3 + SymPy + dispatcher | linear arithmetic, quadratics |
 | **3** | search engine, optional learned suggester | benchmarks (FOLIO, ProofWriter) |
 
-The kernel does not change in M1. The IR gains two things (metavariables
+The kernel does not change in M1, with one tiny exception: a
+defense-in-depth check at the top of `check_proof` rejects any proof
+containing a `Meta` term (§5.3). The IR gains two things (metavariables
 and Horn clauses) and the rest is built around it.
 
 ---
@@ -114,13 +131,13 @@ the system can do at this stage.
 
 ## 4. Architectural commitments (recap)
 
-These are reproduced from the canonical PRD because they constrain M1
-directly. Anything contradicting them is wrong by construction.
+These are reproduced from `prd.md` because they constrain M1 directly.
+Anything contradicting them is wrong by construction.
 
 - **The kernel is the only trusted component.** SLD search, unification,
   and the renderer can all be buggy without compromising soundness, as
-  long as the rendered proof is run through the kernel. The kernel does
-  not change in M1.
+  long as the rendered proof is run through the kernel. The kernel
+  does not change in M1 except for the `Meta` rejection in §5.3.
 - **The IR is the single bus.** Metavariables and the knowledge base
   are added to the IR. Every other module reads and writes IR types.
 - **Soundness over completeness.** SLD search may fail to find a proof
@@ -132,7 +149,7 @@ directly. Anything contradicting them is wrong by construction.
 ### 4.1 Non-functional commitments specific to M1
 
 - **Python 3.12+.**
-- **PEP 8** throughout. Use `ruff` or equivalent in CI.
+- **PEP 8** throughout. Use `ruff` locally.
 - **Type hints required** on every public function and dataclass field.
   Modern syntax (`list[int]`, `X | Y`, no `Optional`/`List`/`Union` from
   `typing`).
@@ -143,12 +160,15 @@ directly. Anything contradicting them is wrong by construction.
 - **No surprise dependencies.** New runtime dependencies for M1 are
   exactly two: `lark` (parser) and `prompt_toolkit` (REPL). Anything
   else needs explicit user approval before adding.
+- **No kernel changes** other than the §5.3 `Meta` rejection. Any
+  proposed change to `src/hlmr/kernel/` requires asking the user
+  first.
 
 ---
 
 ## 5. IR extensions
 
-Two additions only. The rest of `ir/` is unchanged.
+Two additions only. The rest of `ir/` is unchanged from M0.
 
 ### 5.1 Metavariables — `src/hlmr/ir/meta.py`
 
@@ -198,14 +218,19 @@ class KnowledgeBase:
         Cheap pre-filter; full unification happens later."""
 ```
 
-### 5.3 Kernel defense-in-depth (small kernel change, exception to "kernel doesn't change")
+### 5.3 Kernel defense-in-depth (the only permitted M1 kernel change)
 
 `check_proof` adds one check at the top: if any line's formula transitively
 contains a `Meta` term, reject with a new `UnresolvedMeta` error. This
 catches renderer bugs even if a `Meta` slips through. The check is six
 lines and does not touch any rule logic.
 
-This is the only kernel change permitted in M1.
+This is the only kernel change permitted in M1. Anything else proposed
+for `src/hlmr/kernel/` requires asking the user first.
+
+A dedicated test (`test_kernel_unresolved_meta`) constructs a hand-built
+proof containing a `Meta` and asserts the kernel rejects it with the
+new error type.
 
 ---
 
@@ -376,6 +401,15 @@ Take demo 2 (the syllogism), trace SLD by hand, write out the resulting
 Fitch proof line by line on paper, then derive the rendering algorithm
 from that example. Once the algorithm is on paper and we agree it's
 correct, Sonnet implements it.
+
+**The Opus deliverable** is `src/hlmr/solve/RENDER_DESIGN.md`
+containing:
+
+- A worked example for each demo (1 through 4 in §3.3), traced by hand
+- The general algorithm derived from the examples
+- A list of edge cases (empty body, multiple bodies, repeated vars,
+  recursive clauses) and how the algorithm handles each
+- The output type signature and module API
 
 **Test strategy for the renderer.** Every demo proof, plus property
 tests: take a small KB and a successful SLD trace, render, check with
@@ -554,8 +588,8 @@ If working on any of the above and the spec is clear, proceed in Sonnet.
 ### 11.2 Opus 4.7 — required for these specific tasks
 
 **Task A: SLD-to-ND renderer design.** Before any code in
-`solve/render.py`, Opus produces a design document (`solve/RENDER_DESIGN.md`)
-containing:
+`solve/render.py`, Opus produces a design document
+(`solve/RENDER_DESIGN.md`) containing:
 - A worked example for each demo (1 through 4 in §3.3), traced by hand
 - The general algorithm derived from the examples
 - A list of edge cases (empty body, multiple bodies, repeated vars,
@@ -595,17 +629,18 @@ M1 is done when **all** of these hold:
 
 1. All four demos in §3.3 run end-to-end. Each produces a kernel-verified
    proof. The proofs are saved as JSON in `proofs/m1/`.
-2. The full test suite passes: phase 0 tests still green, plus new tests
+2. The full test suite passes: M0 tests still green, plus new tests
    for `unify/`, `solve/`, `parse/`, `repl/`, `log/`. Coverage targets:
    ≥95% on `unify/` and `solve/sld.py`, ≥85% on the renderer, ≥70% on
    `parse/` and `repl/`.
 3. The kernel still has zero imports outside `ir/` and stdlib.
+   `test_kernel_isolation.py` still passes.
 4. `python -m hlmr repl` opens an interactive session that can build a
    KB, accept queries, and produce verified proofs.
 5. Every REPL session logs to JSONL with the schema in §10.4.
 6. README in the repo root reflects M1: install, run demos, run REPL,
    pointer to PRD.
-7. The `99_BAD_*` demonstration proofs from phase 0 still fail with the
+7. The `99_BAD_*` demonstration proofs from M0 still fail with the
    same errors. The kernel's defense-in-depth `Meta` check has its own
    test (a hand-built proof containing a Meta is rejected).
 
@@ -661,10 +696,13 @@ to make this hard to do accidentally.
 
 ---
 
-## 15. Quick reference — what the user actually does
+## 15. Quick reference — what the user actually does (Windows / PowerShell)
 
-```bash
-# Install (Phase 0 already done; M1 adds two deps)
+```powershell
+# Activate venv (already created)
+.\env_hlmr\Scripts\Activate.ps1
+
+# Install (M0 already in place; M1 adds two deps)
 pip install -e ".[test]"
 
 # Run a demo

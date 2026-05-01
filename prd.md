@@ -1,8 +1,8 @@
 # HLMR — Hybrid Logic-Math Reasoner
 
-**Status:** Canonical project spec, v2 (fresh)
+**Status:** Canonical project spec, v2
 **Last updated:** 2026-05-01
-**Per-milestone specs:** `PRD_milestone_1.md`, future `PRD_milestone_2.md`, etc.
+**Per-milestone specs:** `prd_milestone_0.md`, `prd_milestone_1.md`, future `prd_milestone_2.md`, etc.
 
 ---
 
@@ -163,8 +163,9 @@ to add later.
 hlmr/
 ├── pyproject.toml
 ├── README.md
-├── PRD.md                         (this document — canonical)
-├── PRD_milestone_1.md             (M1 implementation spec)
+├── prd.md                         (this document — canonical)
+├── prd_milestone_0.md             (M0 implementation spec)
+├── prd_milestone_1.md             (M1 implementation spec)
 ├── src/hlmr/
 │   ├── ir/                        IR: formula, proof, justification, KB, meta
 │   ├── kernel/                    Trusted core (M0)
@@ -186,7 +187,9 @@ hlmr/
 
 Hard structural rules:
 
-- **`kernel/` imports only from `ir/` and stdlib.** CI-enforced.
+- **`kernel/` imports only from `ir/` and stdlib.** Test-enforced from
+  M0 (a dedicated `test_kernel_isolation.py` walks `kernel/*.py` and
+  asserts no other imports).
 - **No module replicates rule logic.** The kernel is the only place ND
   rule semantics are implemented.
 - **`solvers/` is the only place Z3 and SymPy are imported.** Other
@@ -253,8 +256,8 @@ A user cannot:
 
 | Milestone | Status | Adds | Demo |
 |---|---|---|---|
-| **0** | **Done** | Kernel + IR + CLI proof checker | Hand-built proofs verify |
-| **1** | Spec written (`PRD_milestone_1.md`) | Horn-clause KB, unification, manual SLD, ND renderer, REPL, parser, logging | Kinship, Zebra, simple FOL |
+| **0** | Spec written (`prd_milestone_0.md`) | Kernel + IR + CLI proof checker | Hand-built proofs verify |
+| **1** | Spec written (`prd_milestone_1.md`) | Horn-clause KB, unification, manual SLD, ND renderer, REPL, parser, logging | Kinship, Zebra, simple FOL |
 | **2** | Spec to write | Z3 + SymPy bridges, dispatcher | Linear arithmetic, quadratics |
 | **3** | Spec to write | Automated search, optional learned ranker | FOLIO, ProofWriter, LogiQA |
 | **4+** | Optional | Domain libraries (intro logic, basic number theory, etc.) | Domain-specific demos |
@@ -263,25 +266,28 @@ Each milestone is shippable on its own. Each strictly extends its
 predecessor. The kernel does not change between M0 and M3 (one
 defense-in-depth check is added in M1 for `Meta` rejection).
 
-### 7.2 Milestone 0 — kernel and IR (done)
+### 7.2 Milestone 0 — kernel and IR
 
-Delivered in the existing prototype:
+See `prd_milestone_0.md` for the full spec. Summary:
 
-- 22 ND rules: andI/E_L/E_R, orI_L/I_R/E, impI/E, notI/E, botE,
-  iffI/E_L/E_R, reit, PBC, forallI/E, existsI/E, eqRefl, eqSubst
-- Frozen-dataclass IR with structural equality
-- Capture-avoiding substitution
+- 22 ND rules: `andI`, `andE_L`, `andE_R`, `orI_L`, `orI_R`, `orE`,
+  `impI`, `impE`, `notI`, `notE`, `botE`, `iffI`, `iffE_L`, `iffE_R`,
+  `reit`, `PBC`, `forallI`, `forallE`, `existsI`, `existsE`,
+  `eqRefl`, `eqSubst`
+- IR: frozen-dataclass terms and formulas, capture-avoiding substitution,
+  Fitch-style proofs with box depth tracking, JSON serialisation with
+  versioned schema
+- Eigenvariable side conditions on `forallI` and `existsE`
 - Box scoping with accessibility and discharge checks
-- Eigenvariable side conditions on forallI and existsE
-- JSON serialisation with versioned schema
-- 57 passing tests (soundness, unsoundness, substitution, round-trips)
-- CLI: `python -m hlmr check <proof.json>` and `... show`
-
-The kernel imports only from `ir/` and stdlib. This is CI-enforceable.
+- CLI: `python -m hlmr check <proof.json>` and `... show <proof.json>`
+- Soundness regression suite; unsoundness regression suite; property
+  tests for substitution and JSON round-trips
+- `kernel/` imports only from `ir/` and stdlib (test-enforced from
+  day one)
 
 ### 7.3 Milestone 1 — manual solver with unknowns
 
-See `PRD_milestone_1.md` for the full spec. Summary:
+See `prd_milestone_1.md` for the full spec. Summary:
 
 - IR additions: `Meta` term type, `Clause`, `KnowledgeBase`
 - Modules: `unify/`, `solve/sld.py`, `solve/render.py`, `parse/`,
@@ -297,7 +303,7 @@ No arithmetic. No automated search.
 
 ### 7.4 Milestone 2 — arithmetic and dispatch
 
-To be specified in `PRD_milestone_2.md` near end of M1. Summary of
+To be specified in `prd_milestone_2.md` near end of M1. Summary of
 intent:
 
 - Add Z3 and SymPy bridges in `solvers/`
@@ -352,15 +358,17 @@ the project from collapsing into one of those.
 ### 8.1 Non-functional commitments
 
 - **Python 3.12+** throughout
-- **PEP 8**, enforced via `ruff` in CI
+- **PEP 8**, enforced via `ruff` (locally; CI deferred until needed)
 - **Type hints** on every public function and dataclass field; modern
-  syntax (`list[int]`, `X | Y`)
+  syntax (`list[int]`, `X | Y`); no `Optional`/`List`/`Union` from
+  `typing`
 - **Modular and shallow.** Wrapper classes that delegate one method to
   another are forbidden. Modules over ~600 lines are split.
-- **Runtime dependencies are listed and minimal.** M1: `lark`,
-  `prompt_toolkit`. M2 adds: `z3-solver`, `sympy`. M3 may add `torch`
-  if and only if the learned ranker is built. Anything else needs
-  explicit approval.
+- **Runtime dependencies are listed and minimal.** M0: stdlib only
+  for `kernel/` and `ir/`; `pytest` and `hypothesis` test-only.
+  M1 adds: `lark`, `prompt_toolkit`. M2 adds: `z3-solver`, `sympy`.
+  M3 may add `torch` if and only if the learned ranker is built.
+  Anything else needs explicit approval.
 
 ### 8.2 Testing
 
@@ -369,8 +377,8 @@ the project from collapsing into one of those.
   unifier soundness)
 - Coverage targets: ≥95% on `kernel/`, `unify/`, `solve/sld.py`;
   ≥85% on renderers and dispatcher; ≥70% on parsers and REPL
-- CI runs the soundness regression suite on every commit. An
-  unsoundness regression is a merge-blocker.
+- The soundness regression suite is run before every commit (locally
+  for now; CI later). An unsoundness regression is a merge-blocker.
 
 ### 8.3 Logging
 
@@ -433,6 +441,10 @@ The worst-case downside of using Sonnet for a task that wanted Opus is
 not unsoundness — the kernel still catches that — but a design that
 works for the obvious cases and breaks on the corner cases. Recoverable
 but expensive.
+
+M0 in particular is pure Sonnet territory. Fitch-style ND is in every
+undergraduate textbook; the spec in `prd_milestone_0.md` is detailed
+enough that Sonnet implements directly without design assistance.
 
 ---
 
@@ -513,14 +525,15 @@ These need answers before the milestone that uses them, but not now.
 | Whether to support induction over ℕ in M3 | During M3 |
 | Whether the corpus is large enough to warrant the learned ranker | Late M3 |
 | Domain library structure and curation policy | Before M4 |
+| Whether to add a CI provider (GitHub Actions, etc.) | Before merging M1 |
 
 ---
 
 ## 13. Document conventions
 
-- `PRD.md` (this document) is canonical at the strategic level. It
+- `prd.md` (this document) is canonical at the strategic level. It
   changes infrequently and only with deliberate review.
-- `PRD_milestone_<n>.md` is the implementation spec for milestone *n*.
+- `prd_milestone_<n>.md` is the implementation spec for milestone *n*.
   It is written near the start of work on that milestone and is the
   document Claude Code should read before implementing.
 - Per-milestone PRDs may not contradict this document. If a per-milestone
