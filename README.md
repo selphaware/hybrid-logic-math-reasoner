@@ -79,6 +79,32 @@ tests/                 pytest + hypothesis test suites
 proofs/m0/             16 example proofs (13 valid + 3 deliberately broken)
 ```
 
+## Development
+
+After cloning, run these two commands once to set up the full development
+environment including git hooks:
+
+```powershell
+pip install -e ".[test]"
+pre-commit install
+```
+
+`pip install -e ".[test]"` installs all test and lint tools (pytest, hypothesis,
+ruff, coverage, pre-commit). `pre-commit install` wires the hooks into `.git/`
+for this clone — **without this second command the hooks do not run on commit**.
+
+On every commit the hooks will:
+- Strip trailing whitespace and fix missing end-of-file newlines
+- Validate YAML and TOML syntax
+- Run `tests/test_kernel_isolation.py` to enforce that the kernel never imports
+  from untrusted modules
+
+To run the hooks manually against all files without committing:
+
+```powershell
+pre-commit run --all-files
+```
+
 ## Where to look next
 
 - `prd_milestone_1.md` — manual SLD solver with unknowns, REPL, parser, logging

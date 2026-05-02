@@ -1,0 +1,23 @@
+repos:
+  # Standard hygiene hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+
+  # Kernel isolation invariant: kernel must never import untrusted modules.
+  # Uses language: system so it runs under the project's existing venv rather
+  # than a pre-commit-managed isolated env. Requires venv activation before
+  # running pre-commit locally (see README Development section).
+  - repo: local
+    hooks:
+      - id: kernel-isolation
+        name: kernel import isolation
+        entry: python -m pytest tests/test_kernel_isolation.py -q --no-header
+        language: system
+        pass_filenames: false
+        always_run: true
