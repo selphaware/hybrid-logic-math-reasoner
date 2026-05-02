@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "Q",
+    "args": []
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "Atom",
+          "pred": "P",
+          "args": []
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "Q",
+          "args": []
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": []
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 3,
+      "formula": {
+        "_type": "Atom",
+        "pred": "Q",
+        "args": []
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          1,
+          2
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    }
+  ]
+}

@@ -157,8 +157,11 @@ python proofs\m0\generate.py
   `subst`, `check_proof` determinism, unifier `apply(unify(s,t),s) ==
   apply(unify(s,t),t)`.
 - `test_kernel_isolation.py` is a guardrail — it walks `kernel/*.py`,
-  parses imports with `ast`, and asserts every import is stdlib or
-  under `hlmr.ir`. Never weaken it.
+  parses imports with `ast`, and asserts every import is stdlib,
+  under `hlmr.ir`, or intra-kernel (`hlmr.kernel.*`). The invariant
+  is: kernel never imports from untrusted modules (`hlmr.unify`,
+  `hlmr.solve`, `hlmr.parse`, etc.). Never add untrusted modules to
+  the allow-list.
 
 ## Logging
 

@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Implies",
+    "left": {
+      "_type": "Atom",
+      "pred": "P",
+      "args": []
+    },
+    "right": {
+      "_type": "Atom",
+      "pred": "P",
+      "args": []
+    }
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": []
+      },
+      "justification": {
+        "_type": "Assumption"
+      },
+      "box_depth": 1
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": []
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "reit",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 1
+    },
+    {
+      "number": 3,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "Atom",
+          "pred": "P",
+          "args": []
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "P",
+          "args": []
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impI",
+        "line_refs": [],
+        "box_refs": [
+          [
+            1,
+            2
+          ]
+        ],
+        "extra": {}
+      },
+      "box_depth": 0
+    }
+  ]
+}

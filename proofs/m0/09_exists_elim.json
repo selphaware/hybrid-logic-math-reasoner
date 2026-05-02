@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "Q",
+    "args": []
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "Exists",
+        "var": "x",
+        "body": {
+          "_type": "Atom",
+          "pred": "P",
+          "args": [
+            {
+              "_type": "Var",
+              "name": "x"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Atom",
+        "pred": "Q",
+        "args": []
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 3,
+      "formula": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": [
+          {
+            "_type": "Var",
+            "name": "a"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Assumption"
+      },
+      "box_depth": 1
+    },
+    {
+      "number": 4,
+      "formula": {
+        "_type": "Atom",
+        "pred": "Q",
+        "args": []
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "reit",
+        "line_refs": [
+          2
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 1
+    },
+    {
+      "number": 5,
+      "formula": {
+        "_type": "Atom",
+        "pred": "Q",
+        "args": []
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "existsE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [
+          [
+            3,
+            4
+          ]
+        ],
+        "extra": {
+          "eigenvar": "a"
+        }
+      },
+      "box_depth": 0
+    }
+  ]
+}

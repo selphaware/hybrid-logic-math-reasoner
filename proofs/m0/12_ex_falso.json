@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "P",
+    "args": []
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "Bot"
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": []
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "botE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    }
+  ]
+}

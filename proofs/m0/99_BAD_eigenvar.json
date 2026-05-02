@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "goal": null,
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": [
+          {
+            "_type": "Var",
+            "name": "a"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": [
+          {
+            "_type": "Var",
+            "name": "a"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Assumption"
+      },
+      "box_depth": 1
+    },
+    {
+      "number": 3,
+      "formula": {
+        "_type": "ForAll",
+        "var": "x",
+        "body": {
+          "_type": "Atom",
+          "pred": "P",
+          "args": [
+            {
+              "_type": "Var",
+              "name": "x"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallI",
+        "line_refs": [],
+        "box_refs": [
+          [
+            2,
+            2
+          ]
+        ],
+        "extra": {
+          "eigenvar": "a"
+        }
+      },
+      "box_depth": 0
+    }
+  ]
+}

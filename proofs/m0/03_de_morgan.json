@@ -1,0 +1,325 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Or",
+    "left": {
+      "_type": "Not",
+      "body": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": []
+      }
+    },
+    "right": {
+      "_type": "Not",
+      "body": {
+        "_type": "Atom",
+        "pred": "Q",
+        "args": []
+      }
+    }
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "Not",
+        "body": {
+          "_type": "And",
+          "left": {
+            "_type": "Atom",
+            "pred": "P",
+            "args": []
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "Q",
+            "args": []
+          }
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Not",
+        "body": {
+          "_type": "Or",
+          "left": {
+            "_type": "Not",
+            "body": {
+              "_type": "Atom",
+              "pred": "P",
+              "args": []
+            }
+          },
+          "right": {
+            "_type": "Not",
+            "body": {
+              "_type": "Atom",
+              "pred": "Q",
+              "args": []
+            }
+          }
+        }
+      },
+      "justification": {
+        "_type": "Assumption"
+      },
+      "box_depth": 1
+    },
+    {
+      "number": 3,
+      "formula": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": []
+      },
+      "justification": {
+        "_type": "Assumption"
+      },
+      "box_depth": 2
+    },
+    {
+      "number": 4,
+      "formula": {
+        "_type": "Atom",
+        "pred": "Q",
+        "args": []
+      },
+      "justification": {
+        "_type": "Assumption"
+      },
+      "box_depth": 3
+    },
+    {
+      "number": 5,
+      "formula": {
+        "_type": "And",
+        "left": {
+          "_type": "Atom",
+          "pred": "P",
+          "args": []
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "Q",
+          "args": []
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "andI",
+        "line_refs": [
+          3,
+          4
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 3
+    },
+    {
+      "number": 6,
+      "formula": {
+        "_type": "Bot"
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "notE",
+        "line_refs": [
+          5,
+          1
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 3
+    },
+    {
+      "number": 7,
+      "formula": {
+        "_type": "Not",
+        "body": {
+          "_type": "Atom",
+          "pred": "Q",
+          "args": []
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "notI",
+        "line_refs": [],
+        "box_refs": [
+          [
+            4,
+            6
+          ]
+        ],
+        "extra": {}
+      },
+      "box_depth": 2
+    },
+    {
+      "number": 8,
+      "formula": {
+        "_type": "Or",
+        "left": {
+          "_type": "Not",
+          "body": {
+            "_type": "Atom",
+            "pred": "P",
+            "args": []
+          }
+        },
+        "right": {
+          "_type": "Not",
+          "body": {
+            "_type": "Atom",
+            "pred": "Q",
+            "args": []
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "orI_R",
+        "line_refs": [
+          7
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 2
+    },
+    {
+      "number": 9,
+      "formula": {
+        "_type": "Bot"
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "notE",
+        "line_refs": [
+          8,
+          2
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 2
+    },
+    {
+      "number": 10,
+      "formula": {
+        "_type": "Not",
+        "body": {
+          "_type": "Atom",
+          "pred": "P",
+          "args": []
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "notI",
+        "line_refs": [],
+        "box_refs": [
+          [
+            3,
+            9
+          ]
+        ],
+        "extra": {}
+      },
+      "box_depth": 1
+    },
+    {
+      "number": 11,
+      "formula": {
+        "_type": "Or",
+        "left": {
+          "_type": "Not",
+          "body": {
+            "_type": "Atom",
+            "pred": "P",
+            "args": []
+          }
+        },
+        "right": {
+          "_type": "Not",
+          "body": {
+            "_type": "Atom",
+            "pred": "Q",
+            "args": []
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "orI_L",
+        "line_refs": [
+          10
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 1
+    },
+    {
+      "number": 12,
+      "formula": {
+        "_type": "Bot"
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "notE",
+        "line_refs": [
+          11,
+          2
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 1
+    },
+    {
+      "number": 13,
+      "formula": {
+        "_type": "Or",
+        "left": {
+          "_type": "Not",
+          "body": {
+            "_type": "Atom",
+            "pred": "P",
+            "args": []
+          }
+        },
+        "right": {
+          "_type": "Not",
+          "body": {
+            "_type": "Atom",
+            "pred": "Q",
+            "args": []
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "PBC",
+        "line_refs": [],
+        "box_refs": [
+          [
+            2,
+            12
+          ]
+        ],
+        "extra": {}
+      },
+      "box_depth": 0
+    }
+  ]
+}

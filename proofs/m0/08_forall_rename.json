@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "P",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "bob"
+      }
+    ]
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "ForAll",
+        "var": "x",
+        "body": {
+          "_type": "Atom",
+          "pred": "P",
+          "args": [
+            {
+              "_type": "Var",
+              "name": "x"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "bob"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "bob"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    }
+  ]
+}

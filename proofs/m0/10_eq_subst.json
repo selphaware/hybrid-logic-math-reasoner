@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "P",
+    "args": [
+      {
+        "_type": "Var",
+        "name": "y"
+      }
+    ]
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "Equals",
+        "lhs": {
+          "_type": "Var",
+          "name": "x"
+        },
+        "rhs": {
+          "_type": "Var",
+          "name": "y"
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": [
+          {
+            "_type": "Var",
+            "name": "x"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 3,
+      "formula": {
+        "_type": "Atom",
+        "pred": "P",
+        "args": [
+          {
+            "_type": "Var",
+            "name": "y"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "eqSubst",
+        "line_refs": [
+          1,
+          2
+        ],
+        "box_refs": [],
+        "extra": {
+          "var": "v",
+          "template": {
+            "_type": "formula",
+            "value": {
+              "_type": "Atom",
+              "pred": "P",
+              "args": [
+                {
+                  "_type": "Var",
+                  "name": "v"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    }
+  ]
+}
