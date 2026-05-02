@@ -246,6 +246,46 @@ def main() -> None:
     ))
 
     # ------------------------------------------------------------------
+    # 13_imp_equiv.json — (P→Q) ↔ (~P∨Q)
+    # Forward: impI over [P→Q ⊢ PBC [~(~P∨Q) ⊢ notI[P⊢⊥] → ~P → ~P∨Q → ⊥] → ~P∨Q]
+    # Backward: impI over [~P∨Q ⊢ impI [P ⊢ orE(~P→botE, Q→Q) → Q] → P→Q]
+    # ------------------------------------------------------------------
+    np = Not(P)
+    npq_or_q = Or(Not(P), Q)
+    pq = Implies(P, Q)
+    goal_13 = Iff(pq, npq_or_q)
+    not_npq_or_q = Not(npq_or_q)
+    save("13_imp_equiv.json", Proof(
+        lines=(
+            # Forward direction: (P→Q) → (~P∨Q)
+            ProofLine(1, pq, Assumption(), 1),
+            ProofLine(2, not_npq_or_q, Assumption(), 2),
+            ProofLine(3, P, Assumption(), 3),
+            ProofLine(4, Q, RuleApp("impE", (1, 3)), 3),
+            ProofLine(5, npq_or_q, RuleApp("orI_R", (4,)), 3),
+            ProofLine(6, Bot(), RuleApp("notE", (5, 2)), 3),
+            ProofLine(7, np, RuleApp("notI", box_refs=((3, 6),)), 2),
+            ProofLine(8, npq_or_q, RuleApp("orI_L", (7,)), 2),
+            ProofLine(9, Bot(), RuleApp("notE", (8, 2)), 2),
+            ProofLine(10, npq_or_q, RuleApp("PBC", box_refs=((2, 9),)), 1),
+            ProofLine(11, Implies(pq, npq_or_q), RuleApp("impI", box_refs=((1, 10),)), 0),
+            # Backward direction: (~P∨Q) → (P→Q)
+            ProofLine(12, npq_or_q, Assumption(), 1),
+            ProofLine(13, P, Assumption(), 2),
+            ProofLine(14, np, Assumption(), 3),
+            ProofLine(15, Bot(), RuleApp("notE", (13, 14)), 3),
+            ProofLine(16, Q, RuleApp("botE", (15,)), 3),
+            ProofLine(17, Q, Assumption(), 3),
+            ProofLine(18, Q, RuleApp("orE", (12,), ((14, 16), (17, 17))), 2),
+            ProofLine(19, pq, RuleApp("impI", box_refs=((13, 18),)), 1),
+            ProofLine(20, Implies(npq_or_q, pq), RuleApp("impI", box_refs=((12, 19),)), 0),
+            # Combine
+            ProofLine(21, goal_13, RuleApp("iffI", (11, 20)), 0),
+        ),
+        goal=goal_13,
+    ))
+
+    # ------------------------------------------------------------------
     # 99_BAD_andI.json — Must FAIL with FormulaMismatch
     # andI(P, Q) but conclusion is And(Q, P) — wrong order
     # ------------------------------------------------------------------

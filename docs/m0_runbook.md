@@ -80,5 +80,5 @@ python proofs\m0\generate.py
 ```
 
 Rebuilds all 15 JSON files in `proofs/m0/`, verifying each through
-`check_proof` as it goes. All 12 valid proofs must print `verified`;
+`check_proof` as it goes. All 13 valid proofs must print `verified`;
 all 3 `99_BAD_*` proofs must print `rejected`.

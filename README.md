@@ -76,7 +76,7 @@ src/hlmr/
   kernel/              Trusted proof checker (22 ND rules)
   cli.py               argparse CLI
 tests/                 pytest + hypothesis test suites
-proofs/m0/             15 example proofs (12 valid + 3 deliberately broken)
+proofs/m0/             16 example proofs (13 valid + 3 deliberately broken)
 ```
 
 ## Where to look next
