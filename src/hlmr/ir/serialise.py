@@ -20,6 +20,7 @@ from hlmr.ir.formula import (
     Var,
 )
 from hlmr.ir.justification import Assumption, Justification, Premise, RuleApp
+from hlmr.ir.meta import Meta
 from hlmr.ir.proof import Proof, ProofLine
 
 SCHEMA_VERSION = 1
@@ -42,6 +43,8 @@ def _term_to_dict(t: Term) -> dict:
                 "name": name,
                 "args": [_term_to_dict(a) for a in args],
             }
+        case Meta(name=name):
+            return {"_type": "Meta", "name": name}
         case _:
             raise TypeError(f"Unknown term type: {type(t)}")
 
@@ -54,6 +57,8 @@ def _term_from_dict(d: dict) -> Term:
             return Const(d["value"])
         case "Func":
             return Func(d["name"], tuple(_term_from_dict(a) for a in d["args"]))
+        case "Meta":
+            return Meta(d["name"])
         case _:
             raise ValueError(f"Unknown term type tag: {d['_type']}")
 

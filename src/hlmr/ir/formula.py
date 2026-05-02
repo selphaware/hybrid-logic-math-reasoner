@@ -39,6 +39,20 @@ class Func(Term):
         return f"{self.name}({args_repr})"
 
 
+@dataclass(frozen=True)
+class Meta(Term):
+    """An unknown to be resolved by unification during SLD search.
+
+    Metavariables exist only during search; the kernel never sees them in a
+    valid proof. The renderer must apply the final substitution before
+    kernel checking to produce a ground proof.
+
+    By convention, names start with '?', e.g. '?X', '?Y'.
+    """
+
+    name: str
+
+
 # ---------------------------------------------------------------------------
 # Formulas
 # ---------------------------------------------------------------------------
@@ -153,6 +167,8 @@ def free_vars_term(t: Term) -> frozenset[str]:
             for a in args:
                 result = result | free_vars_term(a)
             return result
+        case Meta():
+            return frozenset()
         case _:  # unreachable; Term hierarchy is closed
             raise TypeError(f"Unknown term type: {type(t)}")  # pragma: no cover
 
@@ -208,6 +224,8 @@ def subst_term(t: Term, var: str, replacement: Term) -> Term:
             if new_args == args:
                 return t
             return Func(name, new_args)
+        case Meta():
+            return t  # logical-variable substitution is a no-op on Meta
         case _:  # unreachable; Term hierarchy is closed
             raise TypeError(f"Unknown term type: {type(t)}")  # pragma: no cover
 

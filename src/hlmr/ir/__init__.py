@@ -20,6 +20,7 @@ from hlmr.ir.formula import (
     subst_term,
 )
 from hlmr.ir.justification import Assumption, Justification, Premise, RuleApp
+from hlmr.ir.meta import Meta
 from hlmr.ir.proof import Proof, ProofLine
 from hlmr.ir.serialise import SCHEMA_VERSION, from_json, to_json
 
@@ -47,6 +48,7 @@ __all__ = [
     "Assumption",
     "RuleApp",
     "Justification",
+    "Meta",
     "ProofLine",
     "Proof",
     "SCHEMA_VERSION",
