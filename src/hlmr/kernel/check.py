@@ -1,5 +1,21 @@
 from __future__ import annotations
 
+from hlmr.ir.formula import (
+    And,
+    Atom,
+    Bot,
+    Equals,
+    Exists,
+    ForAll,
+    Formula,
+    Func,
+    Iff,
+    Implies,
+    Meta,
+    Not,
+    Or,
+    Term,
+)
 from hlmr.ir.justification import Assumption, Premise, RuleApp
 from hlmr.ir.proof import Proof
 from hlmr.kernel.errors import (
@@ -8,9 +24,43 @@ from hlmr.kernel.errors import (
     GoalMismatch,
     StructuralError,
     UnknownRule,
+    UnresolvedMeta,
     Verified,
 )
 from hlmr.kernel.rules import RULES
+
+
+def _term_contains_meta(t: Term) -> str | None:
+    match t:
+        case Meta(name=name):
+            return name
+        case Func(args=args):
+            for a in args:
+                if (found := _term_contains_meta(a)) is not None:
+                    return found
+    return None
+
+
+def _formula_contains_meta(f: Formula) -> str | None:
+    """Walk f transitively; return the first Meta name found, or None.
+
+    The kernel does not import unify/ or solve/; it knows Meta only as
+    a Term subclass that must never appear in a finished proof.
+    """
+    match f:
+        case Atom(args=args):
+            for t in args:
+                if (found := _term_contains_meta(t)) is not None:
+                    return found
+        case Equals(lhs=lhs, rhs=rhs):
+            return _term_contains_meta(lhs) or _term_contains_meta(rhs)
+        case Not(body=body):
+            return _formula_contains_meta(body)
+        case And(left=left, right=right) | Or(left=left, right=right) | Implies(left=left, right=right) | Iff(left=left, right=right):
+            return _formula_contains_meta(left) or _formula_contains_meta(right)
+        case ForAll(body=body) | Exists(body=body):
+            return _formula_contains_meta(body)
+    return None
 
 
 def check_proof(proof: Proof) -> CheckResult:
@@ -28,6 +78,14 @@ def check_proof(proof: Proof) -> CheckResult:
     # 1a. Empty proof rejected
     if not lines:
         return CheckFailure(0, StructuralError("proof has no lines"))
+
+    # §5.3 Meta rejection. Must fire before rule dispatch (rule code can
+    # pattern-match on Meta-bearing formulas and produce undefined behaviour).
+    # Position relative to structural sanity is aesthetic — structural pass
+    # is Meta-blind (reads only line.number, line.box_depth, line.justification).
+    for line in lines:
+        if (name := _formula_contains_meta(line.formula)) is not None:
+            return CheckFailure(line.number, UnresolvedMeta(line.number, name))
 
     # 1b. Structural sanity pass
     for i, line in enumerate(lines):

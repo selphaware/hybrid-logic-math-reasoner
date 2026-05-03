@@ -11,6 +11,7 @@ from hlmr.kernel.errors import (
     RuleError,
     StructuralError,
     UnknownRule,
+    UnresolvedMeta,
     Verified,
     WrongFormulaShape,
     WrongRefCount,
@@ -34,4 +35,5 @@ __all__ = [
     "MissingExtra",
     "StructuralError",
     "GoalMismatch",
+    "UnresolvedMeta",
 ]

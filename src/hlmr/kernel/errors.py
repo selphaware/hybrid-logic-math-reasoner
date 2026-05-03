@@ -110,3 +110,9 @@ class StructuralError(RuleError):
 class GoalMismatch(RuleError):
     expected: Formula
     got: Formula
+
+
+@dataclass(frozen=True)
+class UnresolvedMeta(RuleError):
+    line: int
+    meta_name: str
