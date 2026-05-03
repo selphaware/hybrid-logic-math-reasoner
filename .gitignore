@@ -220,3 +220,5 @@ __marimo__/
 env_hlmr/*
 
 .claude/*
+
+corpus/
