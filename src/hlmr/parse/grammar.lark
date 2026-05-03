@@ -1,0 +1,61 @@
+// Prolog-flavoured surface syntax for HLMR M1. ASCII only.
+// Unicode support is deferred to M2.
+//
+// Three start rules are exposed to callers:
+//   file          – zero or more clauses (used by parse_kb)
+//   single_clause – exactly one clause  (used by parse_clause)
+//   single_query  – one query goal      (used by parse_query)
+
+// ─── Start rules ─────────────────────────────────────────────────────────────
+
+file: clause*
+single_clause: clause
+single_query: "?-" literal "."
+
+// ─── Clause structure ─────────────────────────────────────────────────────────
+// A fact is a clause with an empty body.
+// A rule is a clause with one or more body literals.
+
+clause: literal (":-" body)? "."
+body: literal ("," literal)*
+
+// ─── Literals (atoms and equality) ───────────────────────────────────────────
+// ?literal makes the rule transparent: it is inlined into its parent tree,
+// so no extra Tree node appears for "literal" itself.
+
+?literal: atom | equals
+
+atom: LNAME "(" arglist ")"   -> atom_args
+    | LNAME                    -> atom_no_args
+
+equals: term "=" term
+
+// ─── Terms ────────────────────────────────────────────────────────────────────
+
+arglist: term ("," term)*
+
+term: VARIABLE                  -> var_term
+    | META                      -> meta_term
+    | LNAME "(" arglist ")"     -> func_term
+    | LNAME                     -> const_term
+    | INTEGER                   -> int_term
+
+// ─── Tokens ───────────────────────────────────────────────────────────────────
+
+// Metavariable: ?Uppercase... (valid only in queries, enforced in parser.py)
+META: /\?[A-Z][a-zA-Z0-9_]*/
+
+// Variable: Uppercase... or _underscore_lead (at least one char after _)
+VARIABLE: /[A-Z][a-zA-Z0-9_]*/
+        | /_[a-zA-Z0-9_]+/
+
+// Lowercase identifier: predicate names, function names, constants
+LNAME: /[a-z][a-zA-Z0-9_]*/
+
+// Non-negative integer constant (no leading zeros except 0 itself)
+INTEGER: /(0|[1-9][0-9]*)/
+
+// ─── Ignored patterns ─────────────────────────────────────────────────────────
+
+%ignore /%[^\n]*/
+%ignore /\s+/

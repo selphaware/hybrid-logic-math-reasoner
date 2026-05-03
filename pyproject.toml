@@ -6,7 +6,10 @@ build-backend = "hatchling.build"
 name = "hlmr"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "lark>=1.1",
+    "prompt_toolkit>=3.0",
+]
 
 [project.optional-dependencies]
 test = [
