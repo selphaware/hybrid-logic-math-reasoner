@@ -1,8 +1,8 @@
 # HLMR — Hybrid Logic-Math Reasoner
 
-**Status:** Canonical project spec, v2
-**Last updated:** 2026-05-01
-**Per-milestone specs:** `prd_milestone_0.md`, `prd_milestone_1.md`, future `prd_milestone_2.md`, etc.
+**Status:** Canonical project spec, v3
+**Last updated:** 2026-05-04
+**Per-milestone specs:** `prd_milestone_0.md`, `prd_milestone_1.md`, `prd_milestone_2.md`, future `prd_milestone_3.md`.
 
 ---
 
@@ -53,17 +53,20 @@ The motivating example, demonstrable by milestone 2:
 ```
 KB:
   prime(2). prime(3). prime(5). prime(7).
-  greater_than(?P, 2).
-  less_than(?P, 6).
-  not_equal(?P, 4).
 
 Query:
   ?- prime(?P), greater_than(?P, 2), less_than(?P, 6), not_equal(?P, 4).
 
 Answer:
   ?P = 5.
-  Proof: 11 lines, kernel-verified.
+  Proof: kernel-verified, with arithmetic-witness lines (one per
+  inequality) and natural-deduction lines for the prime/1 lookup.
 ```
+
+The KB contains the `prime/1` facts; the inequality predicates
+(`greater_than`, `less_than`, `not_equal`) are not user-supplied
+clauses but arithmetic constraints that the dispatcher routes to Z3.
+The dispatcher is part of milestone 2.
 
 Pure logic tools can't reason about the inequalities. Pure SMT tools
 produce no proof. LLMs produce something that looks like a proof and
@@ -164,8 +167,10 @@ hlmr/
 ├── pyproject.toml
 ├── README.md
 ├── prd.md                         (this document — canonical)
-├── prd_milestone_0.md             (M0 implementation spec)
-├── prd_milestone_1.md             (M1 implementation spec)
+├── prd_milestone_0.md             (M0 implementation spec — shipped)
+├── prd_milestone_1.md             (M1 implementation spec — shipped)
+├── prd_milestone_2.md             (M2 implementation spec)
+├── prd_milestone_3.md             (M3 implementation spec — to write)
 ├── src/hlmr/
 │   ├── ir/                        IR: formula, proof, justification, KB, meta
 │   ├── kernel/                    Trusted core (M0)
@@ -256,15 +261,16 @@ A user cannot:
 
 | Milestone | Status | Adds | Demo |
 |---|---|---|---|
-| **0** | Spec written (`prd_milestone_0.md`) | Kernel + IR + CLI proof checker | Hand-built proofs verify |
-| **1** | Spec written (`prd_milestone_1.md`) | Horn-clause KB, unification, manual SLD, ND renderer, REPL, parser, logging | Kinship, Zebra, simple FOL |
-| **2** | Spec to write | Z3 + SymPy bridges, dispatcher | Linear arithmetic, quadratics |
+| **0** | **Shipped** (`prd_milestone_0.md`) | Kernel + IR + CLI proof checker | Hand-built proofs verify |
+| **1** | **Shipped** (`prd_milestone_1.md`) | Horn-clause KB, unification, manual SLD, ND renderer, REPL, parser, logging | Kinship, Zebra, simple FOL |
+| **2** | Spec written (`prd_milestone_2.md`) | Z3 + SymPy bridges, dispatcher, `arithEval` kernel rule | Linear arithmetic, quadratics |
 | **3** | Spec to write | Automated search, optional learned ranker | FOLIO, ProofWriter, LogiQA |
 | **4+** | Optional | Domain libraries (intro logic, basic number theory, etc.) | Domain-specific demos |
 
 Each milestone is shippable on its own. Each strictly extends its
-predecessor. The kernel does not change between M0 and M3 (one
-defense-in-depth check is added in M1 for `Meta` rejection).
+predecessor. The kernel changes exactly twice between M0 and M3
+(in M1, the `Meta` rejection check; in M2, the `arithEval` ground
+arithmetic rule).
 
 ### 7.2 Milestone 0 — kernel and IR
 
@@ -303,8 +309,7 @@ No arithmetic. No automated search.
 
 ### 7.4 Milestone 2 — arithmetic and dispatch
 
-To be specified in `prd_milestone_2.md` near end of M1. Summary of
-intent:
+See `prd_milestone_2.md` for the full spec. Summary:
 
 - Add Z3 and SymPy bridges in `solvers/`
 - Add a dispatcher in `dispatch/` that classifies constraints and
@@ -312,6 +317,9 @@ intent:
   and finite domains, SymPy for symbolic algebraic equations
 - Add metavariable types: `Categorical`, `Integer`, `Rational`,
   `FiniteDomain(values)` — replacing M1's single untyped category
+- Add one new kernel rule, `arithEval`, that verifies ground
+  arithmetic atoms (e.g. `5 > 2`, `3 + 4 = 7`) by evaluation. This
+  is the only kernel change in M2.
 - Outcome classification: `UniqueSolution`, `MultipleSolutions`,
   `InfinitelyManySolutions`, `NoSolution`, `Underdetermined`,
   `OutsideFragment`
@@ -319,8 +327,9 @@ intent:
   `{2, 3}` with kernel-checked verification (witness checking, not
   exhaustiveness — see §11)
 
-The dispatcher is the high-risk module of M2 and warrants Opus design
-(see §9).
+The dispatcher is the high-risk module of M2 and warrants Opus
+design. The `arithEval` rule crosses the kernel trust boundary and
+also requires Opus design before implementation.
 
 ### 7.5 Milestone 3 — automated search
 
