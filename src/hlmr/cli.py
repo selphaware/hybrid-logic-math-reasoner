@@ -130,6 +130,13 @@ def _cmd_show(args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------------------
 
 
+def _cmd_repl(args: argparse.Namespace) -> int:
+    from hlmr.repl import run_repl
+
+    run_repl(no_log=args.no_log)
+    return 0
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="hlmr",
@@ -143,12 +150,22 @@ def main() -> None:
     p_show = sub.add_parser("show", help="pretty-print a proof in Fitch style")
     p_show.add_argument("proof", metavar="PROOF.JSON")
 
+    p_repl = sub.add_parser("repl", help="open the interactive REPL")
+    p_repl.add_argument(
+        "--no-log",
+        action="store_true",
+        default=False,
+        help="disable JSONL session logging",
+    )
+
     args = parser.parse_args()
 
     if args.command == "check":
         sys.exit(_cmd_check(args))
     elif args.command == "show":
         sys.exit(_cmd_show(args))
+    elif args.command == "repl":
+        sys.exit(_cmd_repl(args))
     else:
         parser.print_help()
         sys.exit(2)

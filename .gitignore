@@ -222,3 +222,5 @@ env_hlmr/*
 .claude/*
 
 corpus/
+
+latest.claude
