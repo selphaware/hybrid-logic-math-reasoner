@@ -1,0 +1,762 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "chain",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "red"
+      },
+      {
+        "_type": "Const",
+        "value": "green"
+      },
+      {
+        "_type": "Const",
+        "value": "blue"
+      }
+    ]
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "ForAll",
+        "var": "X",
+        "body": {
+          "_type": "ForAll",
+          "var": "Y",
+          "body": {
+            "_type": "ForAll",
+            "var": "Z",
+            "body": {
+              "_type": "Implies",
+              "left": {
+                "_type": "And",
+                "left": {
+                  "_type": "Atom",
+                  "pred": "adjacent",
+                  "args": [
+                    {
+                      "_type": "Var",
+                      "name": "X"
+                    },
+                    {
+                      "_type": "Var",
+                      "name": "Y"
+                    }
+                  ]
+                },
+                "right": {
+                  "_type": "Atom",
+                  "pred": "adjacent",
+                  "args": [
+                    {
+                      "_type": "Var",
+                      "name": "Y"
+                    },
+                    {
+                      "_type": "Var",
+                      "name": "Z"
+                    }
+                  ]
+                }
+              },
+              "right": {
+                "_type": "Atom",
+                "pred": "chain",
+                "args": [
+                  {
+                    "_type": "Var",
+                    "name": "X"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Y"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "ForAll",
+        "var": "X",
+        "body": {
+          "_type": "ForAll",
+          "var": "Y",
+          "body": {
+            "_type": "Implies",
+            "left": {
+              "_type": "Atom",
+              "pred": "left_of",
+              "args": [
+                {
+                  "_type": "Var",
+                  "name": "X"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Y"
+                }
+              ]
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "adjacent",
+              "args": [
+                {
+                  "_type": "Var",
+                  "name": "X"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Y"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 3,
+      "formula": {
+        "_type": "Atom",
+        "pred": "left_of",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "red"
+          },
+          {
+            "_type": "Const",
+            "value": "green"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 4,
+      "formula": {
+        "_type": "Atom",
+        "pred": "left_of",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "green"
+          },
+          {
+            "_type": "Const",
+            "value": "blue"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 5,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Y",
+        "body": {
+          "_type": "Implies",
+          "left": {
+            "_type": "Atom",
+            "pred": "left_of",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "red"
+              },
+              {
+                "_type": "Var",
+                "name": "Y"
+              }
+            ]
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "adjacent",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "red"
+              },
+              {
+                "_type": "Var",
+                "name": "Y"
+              }
+            ]
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          2
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "red"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 6,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "Atom",
+          "pred": "left_of",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "red"
+            },
+            {
+              "_type": "Const",
+              "value": "green"
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "adjacent",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "red"
+            },
+            {
+              "_type": "Const",
+              "value": "green"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          5
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "green"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 7,
+      "formula": {
+        "_type": "Atom",
+        "pred": "adjacent",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "red"
+          },
+          {
+            "_type": "Const",
+            "value": "green"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          6,
+          3
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 8,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Y",
+        "body": {
+          "_type": "Implies",
+          "left": {
+            "_type": "Atom",
+            "pred": "left_of",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "green"
+              },
+              {
+                "_type": "Var",
+                "name": "Y"
+              }
+            ]
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "adjacent",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "green"
+              },
+              {
+                "_type": "Var",
+                "name": "Y"
+              }
+            ]
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          2
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "green"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 9,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "Atom",
+          "pred": "left_of",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "green"
+            },
+            {
+              "_type": "Const",
+              "value": "blue"
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "adjacent",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "green"
+            },
+            {
+              "_type": "Const",
+              "value": "blue"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          8
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "blue"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 10,
+      "formula": {
+        "_type": "Atom",
+        "pred": "adjacent",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "green"
+          },
+          {
+            "_type": "Const",
+            "value": "blue"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          9,
+          4
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 11,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Y",
+        "body": {
+          "_type": "ForAll",
+          "var": "Z",
+          "body": {
+            "_type": "Implies",
+            "left": {
+              "_type": "And",
+              "left": {
+                "_type": "Atom",
+                "pred": "adjacent",
+                "args": [
+                  {
+                    "_type": "Const",
+                    "value": "red"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Y"
+                  }
+                ]
+              },
+              "right": {
+                "_type": "Atom",
+                "pred": "adjacent",
+                "args": [
+                  {
+                    "_type": "Var",
+                    "name": "Y"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  }
+                ]
+              }
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "chain",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "red"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Y"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "red"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 12,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Z",
+        "body": {
+          "_type": "Implies",
+          "left": {
+            "_type": "And",
+            "left": {
+              "_type": "Atom",
+              "pred": "adjacent",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "red"
+                },
+                {
+                  "_type": "Const",
+                  "value": "green"
+                }
+              ]
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "adjacent",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "green"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                }
+              ]
+            }
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "chain",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "red"
+              },
+              {
+                "_type": "Const",
+                "value": "green"
+              },
+              {
+                "_type": "Var",
+                "name": "Z"
+              }
+            ]
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          11
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "green"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 13,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "And",
+          "left": {
+            "_type": "Atom",
+            "pred": "adjacent",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "red"
+              },
+              {
+                "_type": "Const",
+                "value": "green"
+              }
+            ]
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "adjacent",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "green"
+              },
+              {
+                "_type": "Const",
+                "value": "blue"
+              }
+            ]
+          }
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "chain",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "red"
+            },
+            {
+              "_type": "Const",
+              "value": "green"
+            },
+            {
+              "_type": "Const",
+              "value": "blue"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          12
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "blue"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 14,
+      "formula": {
+        "_type": "And",
+        "left": {
+          "_type": "Atom",
+          "pred": "adjacent",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "red"
+            },
+            {
+              "_type": "Const",
+              "value": "green"
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "adjacent",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "green"
+            },
+            {
+              "_type": "Const",
+              "value": "blue"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "andI",
+        "line_refs": [
+          7,
+          10
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 15,
+      "formula": {
+        "_type": "Atom",
+        "pred": "chain",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "red"
+          },
+          {
+            "_type": "Const",
+            "value": "green"
+          },
+          {
+            "_type": "Const",
+            "value": "blue"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          13,
+          14
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    }
+  ]
+}

@@ -137,6 +137,24 @@ def _cmd_repl(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_demo(args: argparse.Namespace) -> int:
+    from hlmr.demos import DEMOS
+
+    name: str | None = getattr(args, "name", None)
+    if not name:
+        print("Available demos:")
+        for n in DEMOS:
+            print(f"  {n}")
+        return 0
+    if name not in DEMOS:
+        available = ", ".join(DEMOS)
+        print(f"unknown demo: {name!r}. Available: {available}", file=sys.stderr)
+        return 1
+    _, proof = DEMOS[name]()
+    print(render_fitch(proof))
+    return 0
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="hlmr",
@@ -158,6 +176,15 @@ def main() -> None:
         help="disable JSONL session logging",
     )
 
+    p_demo = sub.add_parser("demo", help="run a built-in demo and print its proof")
+    p_demo.add_argument(
+        "name",
+        nargs="?",
+        default=None,
+        metavar="NAME",
+        help="demo name (omit to list available demos)",
+    )
+
     args = parser.parse_args()
 
     if args.command == "check":
@@ -166,6 +193,8 @@ def main() -> None:
         sys.exit(_cmd_show(args))
     elif args.command == "repl":
         sys.exit(_cmd_repl(args))
+    elif args.command == "demo":
+        sys.exit(_cmd_demo(args))
     else:
         parser.print_help()
         sys.exit(2)

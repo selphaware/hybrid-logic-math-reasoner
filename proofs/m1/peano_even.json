@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "even",
+    "args": [
+      {
+        "_type": "Func",
+        "name": "s",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Func",
+                    "name": "s",
+                    "args": [
+                      {
+                        "_type": "Const",
+                        "value": 0
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "ForAll",
+        "var": "N",
+        "body": {
+          "_type": "Implies",
+          "left": {
+            "_type": "Atom",
+            "pred": "even",
+            "args": [
+              {
+                "_type": "Var",
+                "name": "N"
+              }
+            ]
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "even",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Func",
+                    "name": "s",
+                    "args": [
+                      {
+                        "_type": "Var",
+                        "name": "N"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Atom",
+        "pred": "even",
+        "args": [
+          {
+            "_type": "Const",
+            "value": 0
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 3,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "Atom",
+          "pred": "even",
+          "args": [
+            {
+              "_type": "Const",
+              "value": 0
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "even",
+          "args": [
+            {
+              "_type": "Func",
+              "name": "s",
+              "args": [
+                {
+                  "_type": "Func",
+                  "name": "s",
+                  "args": [
+                    {
+                      "_type": "Const",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": 0
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 4,
+      "formula": {
+        "_type": "Atom",
+        "pred": "even",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Const",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          3,
+          2
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 5,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "Atom",
+          "pred": "even",
+          "args": [
+            {
+              "_type": "Func",
+              "name": "s",
+              "args": [
+                {
+                  "_type": "Func",
+                  "name": "s",
+                  "args": [
+                    {
+                      "_type": "Const",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "even",
+          "args": [
+            {
+              "_type": "Func",
+              "name": "s",
+              "args": [
+                {
+                  "_type": "Func",
+                  "name": "s",
+                  "args": [
+                    {
+                      "_type": "Func",
+                      "name": "s",
+                      "args": [
+                        {
+                          "_type": "Func",
+                          "name": "s",
+                          "args": [
+                            {
+                              "_type": "Const",
+                              "value": 0
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Func",
+              "name": "s",
+              "args": [
+                {
+                  "_type": "Func",
+                  "name": "s",
+                  "args": [
+                    {
+                      "_type": "Const",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 6,
+      "formula": {
+        "_type": "Atom",
+        "pred": "even",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Func",
+                    "name": "s",
+                    "args": [
+                      {
+                        "_type": "Func",
+                        "name": "s",
+                        "args": [
+                          {
+                            "_type": "Const",
+                            "value": 0
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          5,
+          4
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    }
+  ]
+}
