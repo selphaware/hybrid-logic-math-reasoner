@@ -196,6 +196,148 @@ pick, `abort` to cancel, `candidates` to redisplay the list.
 
 ---
 
+### 4. Arithmetic over Peano naturals
+
+`examples/m1/plus.pl` encodes Peano addition; `examples/m1/mult.pl` adds
+multiplication. Both predicates run forward (compute a result) and backward
+(solve for an unknown argument).
+
+**2 + 1 = ?**
+
+```
+kb> ?- plus(s(s(0)), s(0), ?R).
+
+Goal (1 remaining): plus(s(s(0)), s(0), ?R)
+Candidates:
+  1. plus(0, Y, Y).  (fact, plus_1)
+  2. plus(s(X), Y, s(Z)) :- plus(X, Y, Z).  (rule, plus_2)
+> 2
+
+Goal (1 remaining): plus(s(0), s(0), ?Z_3)
+Candidates:
+  1. plus(0, Y, Y).  (fact, plus_1)
+  2. plus(s(X), Y, s(Z)) :- plus(X, Y, Z).  (rule, plus_2)
+> 2
+
+Goal (1 remaining): plus(0, s(0), ?Z_6)
+Candidates:
+  1. plus(0, Y, Y).  (fact, plus_1)
+  2. plus(s(X), Y, s(Z)) :- plus(X, Y, Z).  (rule, plus_2)
+> 1
+
+Solved: ?R = s(s(s(0)))
+Proof: 11 lines, kernel-verified.
+?- :show last
+ 1. (forall X. (forall Y. (forall Z. (plus(X, Y, Z) -> plus(s(X), Y, s(Z))))))  Premise
+ 2. (forall Y. plus(0, Y, Y))            Premise
+ 3. plus(0, s(0), s(0))                  forallE 2 [term=s(0)]
+... [8 more lines]
+11. plus(s(s(0)), s(0), s(s(s(0))))      impE 10, 7
+```
+
+**Backward: 2 + ? = 3**
+
+Supply the result and leave the addend unknown; unification finds it:
+
+```
+?- plus(s(s(0)), ?X, s(s(s(0)))).
+... (picks: 2, 2, 1)
+
+Solved: ?X = s(0)
+Proof: 11 lines, kernel-verified.
+```
+
+**1 + 1 = 2** (7-line proof):
+
+```
+?- plus(s(0), s(0), ?X).
+... (picks: 2, 1)
+
+Solved: ?X = s(s(0))
+Proof: 7 lines, kernel-verified.
+?- :show last
+1. (forall X. (forall Y. (forall Z. (plus(X, Y, Z) -> plus(s(X), Y, s(Z))))))  Premise
+2. (forall Y. plus(0, Y, Y))            Premise
+3. plus(0, s(0), s(0))                  forallE 2 [term=s(0)]
+4. (forall Y. (forall Z. (plus(0, Y, Z) -> plus(s(0), Y, s(Z)))))  forallE 1 [term=0]
+5. (forall Z. (plus(0, s(0), Z) -> plus(s(0), s(0), s(Z))))  forallE 4 [term=s(0)]
+6. (plus(0, s(0), s(0)) -> plus(s(0), s(0), s(s(0))))  forallE 5 [term=s(0)]
+7. plus(s(0), s(0), s(s(0)))            impE 6, 3
+```
+
+**2 × 3 = 6**
+
+```
+kb> :load examples/m1/mult.pl
+  Loaded 4 clause(s) from 'examples/m1/mult.pl'.
+
+kb> ?- mult(s(s(0)), s(s(s(0))), ?R).
+
+Goal (1 remaining): mult(s(s(0)), s(s(s(0))), ?R)
+Candidates:
+  1. mult(0, Y, 0).  (fact, mult_1)
+  2. mult(s(X), Y, Z) :- mult(X, Y, W), plus(W, Y, Z).  (rule, mult_2)
+> 2
+
+Goal (2 remaining): mult(s(0), s(s(s(0))), ?W_4)
+...
+> 2
+
+Goal (3 remaining): mult(0, s(s(s(0))), ?W_8)
+...
+> 1
+
+... (5 more picks to discharge the plus subgoals)
+
+Solved: ?R = s(s(s(s(s(s(0))))))
+Proof: 32 lines, kernel-verified.
+```
+
+**1 × 1 = 1** — 11 steps:
+
+```
+?- mult(s(0), s(0), ?R).
+
+Goal (1 remaining): mult(s(0), s(0), ?R)
+Candidates:
+  1. mult(0, Y, 0).  (fact, mult_1)
+  2. mult(s(X), Y, Z) :- mult(X, Y, W), plus(W, Y, Z).  (rule, mult_2)
+> 2
+
+Goal (2 remaining): mult(0, s(0), ?W_4)
+Candidates:
+  1. mult(0, Y, 0).  (fact, mult_1)
+  2. mult(s(X), Y, Z) :- mult(X, Y, W), plus(W, Y, Z).  (rule, mult_2)
+> 1
+
+Goal (1 remaining): plus(0, s(0), ?Z_3)
+Candidates:
+  1. plus(0, Y, Y).  (fact, plus_1)
+  2. plus(s(X), Y, s(Z)) :- plus(X, Y, Z).  (rule, plus_2)
+  3. plus(0, Y, Y).  (fact, plus_1)
+  4. plus(s(X), Y, s(Z)) :- plus(X, Y, Z).  (rule, plus_2)
+> 3
+
+Solved: ?R = s(0)
+Proof: 11 lines, kernel-verified.
+?- :show last
+ 1. (forall X. (forall Y. (forall Z. (forall W. ((mult(X, Y, W) & plus(W, Y, Z)) -> mult(s(X), Y, Z))))))  Premise
+ 2. (forall Y. mult(0, Y, 0))            Premise
+ 3. (forall Y. plus(0, Y, Y))            Premise
+ 4. mult(0, s(0), 0)                     forallE 2 [term=s(0)]
+ 5. plus(0, s(0), s(0))                  forallE 3 [term=s(0)]
+ 6. (forall Y. (forall Z. (forall W. ((mult(0, Y, W) & plus(W, Y, Z)) -> mult(s(0), Y, Z)))))  forallE 1 [term=0]
+ 7. (forall Z. (forall W. ((mult(0, s(0), W) & plus(W, s(0), Z)) -> mult(s(0), s(0), Z))))  forallE 6 [term=s(0)]
+ 8. (forall W. ((mult(0, s(0), W) & plus(W, s(0), s(0))) -> mult(s(0), s(0), s(0))))  forallE 7 [term=s(0)]
+ 9. ((mult(0, s(0), 0) & plus(0, s(0), s(0))) -> mult(s(0), s(0), s(0)))  forallE 8 [term=0]
+10. (mult(0, s(0), 0) & plus(0, s(0), s(0)))  andI 4, 5
+11. mult(s(0), s(0), s(0))               impE 9, 10
+```
+
+(The 4-candidate list for plus appears because `plus.pl` and `mult.pl` were both loaded in this session. Candidates 1/2 and 3/4 are identical — pick either base or step.)
+
+---
+
 ## Demos
 
 Four canonical demos ship with M1, each producing a kernel-verified proof
