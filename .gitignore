@@ -224,3 +224,5 @@ env_hlmr/*
 corpus/
 
 latest.claude
+
+scratch/
