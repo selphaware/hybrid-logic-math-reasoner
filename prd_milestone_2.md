@@ -619,6 +619,17 @@ Per Opus design plus:
   defense-in-depth coverage that the kernel catches dispatcher
   bugs.
 
+**Open question for dispatcher design (from M1 hardening):** Should the
+`Underdetermined` outcome generalise to cover pure-SLD non-ground
+witnesses? M1 hardening found that universal-fact clauses (e.g. `p(X).`)
+satisfy queries like `?- p(?A).` via SLD without binding `?A` to a concrete
+term.  The provisional M1 fix returns `(Substitution, None)` from
+`manual_solve` and prints "underdetermined" to the user.  The M2 dispatcher
+design doc (`DISPATCH_DESIGN.md`) must decide: unify this with the
+`Underdetermined` outcome, add a `pure-SLD-underdetermined` sub-case, or
+teach the renderer to emit universal-fact proofs.
+See `proofs/m1/HARDENING_FINDINGS.md`.
+
 ---
 
 ## 10. Renderer extension — `src/hlmr/solve/render.py` `[REQUIRES OPUS 4.7 — DESIGN]`
@@ -912,6 +923,15 @@ typed-meta path could in principle interfere. Mitigation: §3.4
 makes M1 demo regression a hard requirement; the dispatcher
 classifies non-arithmetic-operator goals as `KB` and the M1 SLD
 path is unchanged.
+
+**Pure-SLD underdetermined witnesses.** Universal-fact clauses
+(e.g. `p(X).`) can satisfy a query `?- p(?A).` via SLD without ever
+grounding `?A`. M1 hardening (`proofs/m1/HARDENING_FINDINGS.md`) introduced
+a provisional `(Substitution, None)` return from `manual_solve`; the M2
+dispatcher design must decide whether to unify this with the `Underdetermined`
+outcome or handle it separately. Until resolved, pure-SLD underdetermined
+queries display "Goal resolved but no ground witness — query is
+underdetermined." rather than crashing.
 
 **Schema v1/v2 deserialisation drift.** Loading old M1 proof JSONs
 under M2 must produce structurally-identical IR objects to what

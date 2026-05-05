@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "triple",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "a"
+      },
+      {
+        "_type": "Const",
+        "value": "b"
+      },
+      {
+        "_type": "Const",
+        "value": "c"
+      }
+    ]
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "Atom",
+        "pred": "triple",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "a"
+          },
+          {
+            "_type": "Const",
+            "value": "b"
+          },
+          {
+            "_type": "Const",
+            "value": "c"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "fixture": "capture_meta_clash",
+  "query": "?- knows(?X).",
+  "expected_witness": {
+    "?X": {
+      "_type": "Const",
+      "value": "socrates"
+    }
+  },
+  "kb_file": "capture_stress.pl",
+  "kb_source_hash": "edff27d22609619e5c84c891cc9c1feb6c02ffa1ef8c710546d90a682ee47b25",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "knows",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "socrates"
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "fixture": "finite_puzzle",
+  "query": "?- chain(red, green, blue).",
+  "expected_witness": {},
+  "kb_file": "finite_puzzle.pl",
+  "kb_source_hash": "79249b27fe144b7d0bcea08b571f6266d2e67619e24e02c2a14a08d60682927a",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "chain",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "red"
+      },
+      {
+        "_type": "Const",
+        "value": "green"
+      },
+      {
+        "_type": "Const",
+        "value": "blue"
+      }
+    ]
+  }
+}

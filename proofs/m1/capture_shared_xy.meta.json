@@ -1,0 +1,30 @@
+{
+  "fixture": "capture_shared_xy",
+  "query": "?- foo(?A, ?B).",
+  "expected_witness": {
+    "?A": {
+      "_type": "Const",
+      "value": "a"
+    },
+    "?B": {
+      "_type": "Const",
+      "value": "b"
+    }
+  },
+  "kb_file": "capture_stress.pl",
+  "kb_source_hash": "edff27d22609619e5c84c891cc9c1feb6c02ffa1ef8c710546d90a682ee47b25",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "foo",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "a"
+      },
+      {
+        "_type": "Const",
+        "value": "b"
+      }
+    ]
+  }
+}

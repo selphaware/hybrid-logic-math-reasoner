@@ -1,0 +1,1854 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "ancestor",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "alice"
+      },
+      {
+        "_type": "Const",
+        "value": "leaf6"
+      }
+    ]
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "ForAll",
+        "var": "X",
+        "body": {
+          "_type": "ForAll",
+          "var": "Y",
+          "body": {
+            "_type": "ForAll",
+            "var": "Z",
+            "body": {
+              "_type": "Implies",
+              "left": {
+                "_type": "And",
+                "left": {
+                  "_type": "Atom",
+                  "pred": "parent",
+                  "args": [
+                    {
+                      "_type": "Var",
+                      "name": "X"
+                    },
+                    {
+                      "_type": "Var",
+                      "name": "Z"
+                    }
+                  ]
+                },
+                "right": {
+                  "_type": "Atom",
+                  "pred": "ancestor",
+                  "args": [
+                    {
+                      "_type": "Var",
+                      "name": "Z"
+                    },
+                    {
+                      "_type": "Var",
+                      "name": "Y"
+                    }
+                  ]
+                }
+              },
+              "right": {
+                "_type": "Atom",
+                "pred": "ancestor",
+                "args": [
+                  {
+                    "_type": "Var",
+                    "name": "X"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Y"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Atom",
+        "pred": "parent",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "alice"
+          },
+          {
+            "_type": "Const",
+            "value": "bob"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 3,
+      "formula": {
+        "_type": "Atom",
+        "pred": "parent",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "bob"
+          },
+          {
+            "_type": "Const",
+            "value": "carol2"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 4,
+      "formula": {
+        "_type": "Atom",
+        "pred": "parent",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "carol2"
+          },
+          {
+            "_type": "Const",
+            "value": "dave"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 5,
+      "formula": {
+        "_type": "Atom",
+        "pred": "parent",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "dave"
+          },
+          {
+            "_type": "Const",
+            "value": "eve"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 6,
+      "formula": {
+        "_type": "Atom",
+        "pred": "parent",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "eve"
+          },
+          {
+            "_type": "Const",
+            "value": "fred"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 7,
+      "formula": {
+        "_type": "ForAll",
+        "var": "X",
+        "body": {
+          "_type": "ForAll",
+          "var": "Y",
+          "body": {
+            "_type": "Implies",
+            "left": {
+              "_type": "Atom",
+              "pred": "parent",
+              "args": [
+                {
+                  "_type": "Var",
+                  "name": "X"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Y"
+                }
+              ]
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "ancestor",
+              "args": [
+                {
+                  "_type": "Var",
+                  "name": "X"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Y"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 8,
+      "formula": {
+        "_type": "Atom",
+        "pred": "parent",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "fred"
+          },
+          {
+            "_type": "Const",
+            "value": "leaf6"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 9,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Y",
+        "body": {
+          "_type": "Implies",
+          "left": {
+            "_type": "Atom",
+            "pred": "parent",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "fred"
+              },
+              {
+                "_type": "Var",
+                "name": "Y"
+              }
+            ]
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "ancestor",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "fred"
+              },
+              {
+                "_type": "Var",
+                "name": "Y"
+              }
+            ]
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          7
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "fred"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 10,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "Atom",
+          "pred": "parent",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "fred"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "ancestor",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "fred"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          9
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 11,
+      "formula": {
+        "_type": "Atom",
+        "pred": "ancestor",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "fred"
+          },
+          {
+            "_type": "Const",
+            "value": "leaf6"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          10,
+          8
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 12,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Y",
+        "body": {
+          "_type": "ForAll",
+          "var": "Z",
+          "body": {
+            "_type": "Implies",
+            "left": {
+              "_type": "And",
+              "left": {
+                "_type": "Atom",
+                "pred": "parent",
+                "args": [
+                  {
+                    "_type": "Const",
+                    "value": "eve"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  }
+                ]
+              },
+              "right": {
+                "_type": "Atom",
+                "pred": "ancestor",
+                "args": [
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Y"
+                  }
+                ]
+              }
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "ancestor",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "eve"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Y"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "eve"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 13,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Z",
+        "body": {
+          "_type": "Implies",
+          "left": {
+            "_type": "And",
+            "left": {
+              "_type": "Atom",
+              "pred": "parent",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "eve"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                }
+              ]
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "ancestor",
+              "args": [
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                },
+                {
+                  "_type": "Const",
+                  "value": "leaf6"
+                }
+              ]
+            }
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "ancestor",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "eve"
+              },
+              {
+                "_type": "Const",
+                "value": "leaf6"
+              }
+            ]
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          12
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 14,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "And",
+          "left": {
+            "_type": "Atom",
+            "pred": "parent",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "eve"
+              },
+              {
+                "_type": "Const",
+                "value": "fred"
+              }
+            ]
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "ancestor",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "fred"
+              },
+              {
+                "_type": "Const",
+                "value": "leaf6"
+              }
+            ]
+          }
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "ancestor",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "eve"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          13
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "fred"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 15,
+      "formula": {
+        "_type": "And",
+        "left": {
+          "_type": "Atom",
+          "pred": "parent",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "eve"
+            },
+            {
+              "_type": "Const",
+              "value": "fred"
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "ancestor",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "fred"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "andI",
+        "line_refs": [
+          6,
+          11
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 16,
+      "formula": {
+        "_type": "Atom",
+        "pred": "ancestor",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "eve"
+          },
+          {
+            "_type": "Const",
+            "value": "leaf6"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          14,
+          15
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 17,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Y",
+        "body": {
+          "_type": "ForAll",
+          "var": "Z",
+          "body": {
+            "_type": "Implies",
+            "left": {
+              "_type": "And",
+              "left": {
+                "_type": "Atom",
+                "pred": "parent",
+                "args": [
+                  {
+                    "_type": "Const",
+                    "value": "dave"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  }
+                ]
+              },
+              "right": {
+                "_type": "Atom",
+                "pred": "ancestor",
+                "args": [
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Y"
+                  }
+                ]
+              }
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "ancestor",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "dave"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Y"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "dave"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 18,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Z",
+        "body": {
+          "_type": "Implies",
+          "left": {
+            "_type": "And",
+            "left": {
+              "_type": "Atom",
+              "pred": "parent",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "dave"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                }
+              ]
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "ancestor",
+              "args": [
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                },
+                {
+                  "_type": "Const",
+                  "value": "leaf6"
+                }
+              ]
+            }
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "ancestor",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "dave"
+              },
+              {
+                "_type": "Const",
+                "value": "leaf6"
+              }
+            ]
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          17
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 19,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "And",
+          "left": {
+            "_type": "Atom",
+            "pred": "parent",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "dave"
+              },
+              {
+                "_type": "Const",
+                "value": "eve"
+              }
+            ]
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "ancestor",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "eve"
+              },
+              {
+                "_type": "Const",
+                "value": "leaf6"
+              }
+            ]
+          }
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "ancestor",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "dave"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          18
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "eve"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 20,
+      "formula": {
+        "_type": "And",
+        "left": {
+          "_type": "Atom",
+          "pred": "parent",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "dave"
+            },
+            {
+              "_type": "Const",
+              "value": "eve"
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "ancestor",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "eve"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "andI",
+        "line_refs": [
+          5,
+          16
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 21,
+      "formula": {
+        "_type": "Atom",
+        "pred": "ancestor",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "dave"
+          },
+          {
+            "_type": "Const",
+            "value": "leaf6"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          19,
+          20
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 22,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Y",
+        "body": {
+          "_type": "ForAll",
+          "var": "Z",
+          "body": {
+            "_type": "Implies",
+            "left": {
+              "_type": "And",
+              "left": {
+                "_type": "Atom",
+                "pred": "parent",
+                "args": [
+                  {
+                    "_type": "Const",
+                    "value": "carol2"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  }
+                ]
+              },
+              "right": {
+                "_type": "Atom",
+                "pred": "ancestor",
+                "args": [
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Y"
+                  }
+                ]
+              }
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "ancestor",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "carol2"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Y"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "carol2"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 23,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Z",
+        "body": {
+          "_type": "Implies",
+          "left": {
+            "_type": "And",
+            "left": {
+              "_type": "Atom",
+              "pred": "parent",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "carol2"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                }
+              ]
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "ancestor",
+              "args": [
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                },
+                {
+                  "_type": "Const",
+                  "value": "leaf6"
+                }
+              ]
+            }
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "ancestor",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "carol2"
+              },
+              {
+                "_type": "Const",
+                "value": "leaf6"
+              }
+            ]
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          22
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 24,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "And",
+          "left": {
+            "_type": "Atom",
+            "pred": "parent",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "carol2"
+              },
+              {
+                "_type": "Const",
+                "value": "dave"
+              }
+            ]
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "ancestor",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "dave"
+              },
+              {
+                "_type": "Const",
+                "value": "leaf6"
+              }
+            ]
+          }
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "ancestor",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "carol2"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          23
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "dave"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 25,
+      "formula": {
+        "_type": "And",
+        "left": {
+          "_type": "Atom",
+          "pred": "parent",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "carol2"
+            },
+            {
+              "_type": "Const",
+              "value": "dave"
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "ancestor",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "dave"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "andI",
+        "line_refs": [
+          4,
+          21
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 26,
+      "formula": {
+        "_type": "Atom",
+        "pred": "ancestor",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "carol2"
+          },
+          {
+            "_type": "Const",
+            "value": "leaf6"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          24,
+          25
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 27,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Y",
+        "body": {
+          "_type": "ForAll",
+          "var": "Z",
+          "body": {
+            "_type": "Implies",
+            "left": {
+              "_type": "And",
+              "left": {
+                "_type": "Atom",
+                "pred": "parent",
+                "args": [
+                  {
+                    "_type": "Const",
+                    "value": "bob"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  }
+                ]
+              },
+              "right": {
+                "_type": "Atom",
+                "pred": "ancestor",
+                "args": [
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Y"
+                  }
+                ]
+              }
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "ancestor",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "bob"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Y"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "bob"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 28,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Z",
+        "body": {
+          "_type": "Implies",
+          "left": {
+            "_type": "And",
+            "left": {
+              "_type": "Atom",
+              "pred": "parent",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "bob"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                }
+              ]
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "ancestor",
+              "args": [
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                },
+                {
+                  "_type": "Const",
+                  "value": "leaf6"
+                }
+              ]
+            }
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "ancestor",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "bob"
+              },
+              {
+                "_type": "Const",
+                "value": "leaf6"
+              }
+            ]
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          27
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 29,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "And",
+          "left": {
+            "_type": "Atom",
+            "pred": "parent",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "bob"
+              },
+              {
+                "_type": "Const",
+                "value": "carol2"
+              }
+            ]
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "ancestor",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "carol2"
+              },
+              {
+                "_type": "Const",
+                "value": "leaf6"
+              }
+            ]
+          }
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "ancestor",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "bob"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          28
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "carol2"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 30,
+      "formula": {
+        "_type": "And",
+        "left": {
+          "_type": "Atom",
+          "pred": "parent",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "bob"
+            },
+            {
+              "_type": "Const",
+              "value": "carol2"
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "ancestor",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "carol2"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "andI",
+        "line_refs": [
+          3,
+          26
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 31,
+      "formula": {
+        "_type": "Atom",
+        "pred": "ancestor",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "bob"
+          },
+          {
+            "_type": "Const",
+            "value": "leaf6"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          29,
+          30
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 32,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Y",
+        "body": {
+          "_type": "ForAll",
+          "var": "Z",
+          "body": {
+            "_type": "Implies",
+            "left": {
+              "_type": "And",
+              "left": {
+                "_type": "Atom",
+                "pred": "parent",
+                "args": [
+                  {
+                    "_type": "Const",
+                    "value": "alice"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  }
+                ]
+              },
+              "right": {
+                "_type": "Atom",
+                "pred": "ancestor",
+                "args": [
+                  {
+                    "_type": "Var",
+                    "name": "Z"
+                  },
+                  {
+                    "_type": "Var",
+                    "name": "Y"
+                  }
+                ]
+              }
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "ancestor",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "alice"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Y"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "alice"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 33,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Z",
+        "body": {
+          "_type": "Implies",
+          "left": {
+            "_type": "And",
+            "left": {
+              "_type": "Atom",
+              "pred": "parent",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": "alice"
+                },
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                }
+              ]
+            },
+            "right": {
+              "_type": "Atom",
+              "pred": "ancestor",
+              "args": [
+                {
+                  "_type": "Var",
+                  "name": "Z"
+                },
+                {
+                  "_type": "Const",
+                  "value": "leaf6"
+                }
+              ]
+            }
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "ancestor",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "alice"
+              },
+              {
+                "_type": "Const",
+                "value": "leaf6"
+              }
+            ]
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          32
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 34,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "And",
+          "left": {
+            "_type": "Atom",
+            "pred": "parent",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "alice"
+              },
+              {
+                "_type": "Const",
+                "value": "bob"
+              }
+            ]
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "ancestor",
+            "args": [
+              {
+                "_type": "Const",
+                "value": "bob"
+              },
+              {
+                "_type": "Const",
+                "value": "leaf6"
+              }
+            ]
+          }
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "ancestor",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "alice"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          33
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "bob"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 35,
+      "formula": {
+        "_type": "And",
+        "left": {
+          "_type": "Atom",
+          "pred": "parent",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "alice"
+            },
+            {
+              "_type": "Const",
+              "value": "bob"
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "ancestor",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "bob"
+            },
+            {
+              "_type": "Const",
+              "value": "leaf6"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "andI",
+        "line_refs": [
+          2,
+          31
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 36,
+      "formula": {
+        "_type": "Atom",
+        "pred": "ancestor",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "alice"
+          },
+          {
+            "_type": "Const",
+            "value": "leaf6"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          34,
+          35
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    }
+  ]
+}

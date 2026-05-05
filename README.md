@@ -30,6 +30,13 @@ See `prd.md` for the full spec and `prd_milestone_1.md` for M1 details.
 - JSONL session logging for future training corpus
 - Four canonical demos with kernel-verified proof artifacts
 
+**M1 hardening** — 30-fixture proof corpus and adversarial tests:
+- `proofs/m1/` — 26 new fixtures (kinship chains, Peano plus/times/lt, capture-avoidance
+  stress, edge cases) plus the 4 original demo proofs; each with sidecar metadata.
+  See `proofs/m1/README.md` for the full index and `proofs/m1/HARDENING_FINDINGS.md`
+  for property-test findings.
+- Regenerate the corpus: `python -m hlmr regenerate-corpus`
+
 ---
 
 ## Requirements

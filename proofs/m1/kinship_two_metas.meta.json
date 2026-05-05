@@ -1,0 +1,30 @@
+{
+  "fixture": "kinship_two_metas",
+  "query": "?- ancestor(?X, ?Y).",
+  "expected_witness": {
+    "?X": {
+      "_type": "Const",
+      "value": "carol"
+    },
+    "?Y": {
+      "_type": "Const",
+      "value": "mid1"
+    }
+  },
+  "kb_file": "kinship_extended.pl",
+  "kb_source_hash": "11854e4325f1638b228c531d4feb20ce3c65d28576fab9efabb43992bc03be51",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "ancestor",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "carol"
+      },
+      {
+        "_type": "Const",
+        "value": "mid1"
+      }
+    ]
+  }
+}

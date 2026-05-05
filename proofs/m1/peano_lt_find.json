@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "lt",
+    "args": [
+      {
+        "_type": "Const",
+        "value": 0
+      },
+      {
+        "_type": "Func",
+        "name": "s",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Const",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "ForAll",
+        "var": "Y",
+        "body": {
+          "_type": "Atom",
+          "pred": "lt",
+          "args": [
+            {
+              "_type": "Const",
+              "value": 0
+            },
+            {
+              "_type": "Func",
+              "name": "s",
+              "args": [
+                {
+                  "_type": "Var",
+                  "name": "Y"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Atom",
+        "pred": "lt",
+        "args": [
+          {
+            "_type": "Const",
+            "value": 0
+          },
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Func",
+                    "name": "s",
+                    "args": [
+                      {
+                        "_type": "Const",
+                        "value": 0
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Func",
+              "name": "s",
+              "args": [
+                {
+                  "_type": "Func",
+                  "name": "s",
+                  "args": [
+                    {
+                      "_type": "Const",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    }
+  ]
+}

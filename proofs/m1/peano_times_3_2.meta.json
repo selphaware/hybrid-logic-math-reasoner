@@ -1,0 +1,132 @@
+{
+  "fixture": "peano_times_3_2",
+  "query": "?- times(s(s(s(0))), s(s(0)), ?R).",
+  "expected_witness": {
+    "?R": {
+      "_type": "Func",
+      "name": "s",
+      "args": [
+        {
+          "_type": "Func",
+          "name": "s",
+          "args": [
+            {
+              "_type": "Func",
+              "name": "s",
+              "args": [
+                {
+                  "_type": "Func",
+                  "name": "s",
+                  "args": [
+                    {
+                      "_type": "Func",
+                      "name": "s",
+                      "args": [
+                        {
+                          "_type": "Func",
+                          "name": "s",
+                          "args": [
+                            {
+                              "_type": "Const",
+                              "value": 0
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "kb_file": "peano_times.pl",
+  "kb_source_hash": "a5a1e479031c997db4a0582116a1ff7e9f5643e3056fcb94bf52bce5bb9a81b8",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "times",
+    "args": [
+      {
+        "_type": "Func",
+        "name": "s",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Const",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "_type": "Func",
+        "name": "s",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Const",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "_type": "Func",
+        "name": "s",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Func",
+                    "name": "s",
+                    "args": [
+                      {
+                        "_type": "Func",
+                        "name": "s",
+                        "args": [
+                          {
+                            "_type": "Func",
+                            "name": "s",
+                            "args": [
+                              {
+                                "_type": "Const",
+                                "value": 0
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

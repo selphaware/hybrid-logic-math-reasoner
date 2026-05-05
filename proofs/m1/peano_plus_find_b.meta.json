@@ -1,0 +1,84 @@
+{
+  "fixture": "peano_plus_find_b",
+  "query": "?- plus(0, ?B, s(s(s(0)))).",
+  "expected_witness": {
+    "?B": {
+      "_type": "Func",
+      "name": "s",
+      "args": [
+        {
+          "_type": "Func",
+          "name": "s",
+          "args": [
+            {
+              "_type": "Func",
+              "name": "s",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "kb_file": "peano_plus.pl",
+  "kb_source_hash": "b5f940ac970eda8b627a59bb3a0c91e29fb3680da2a3cb221b1939f9e053f532",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "plus",
+    "args": [
+      {
+        "_type": "Const",
+        "value": 0
+      },
+      {
+        "_type": "Func",
+        "name": "s",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Const",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "_type": "Func",
+        "name": "s",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Const",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

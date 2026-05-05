@@ -1,0 +1,57 @@
+{
+  "fixture": "peano_lt_2_4",
+  "query": "?- lt(s(s(0)), s(s(s(s(0))))).",
+  "expected_witness": {},
+  "kb_file": "peano_lt.pl",
+  "kb_source_hash": "6c01628c0314d07b33ce7d84bd8d7b334767d4b6960fcea8e2661264d7153d6e",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "lt",
+    "args": [
+      {
+        "_type": "Func",
+        "name": "s",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Const",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "_type": "Func",
+        "name": "s",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Func",
+                    "name": "s",
+                    "args": [
+                      {
+                        "_type": "Const",
+                        "value": 0
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

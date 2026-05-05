@@ -1,0 +1,26 @@
+{
+  "fixture": "kinship_chain6",
+  "query": "?- ancestor(?Top, leaf6).",
+  "expected_witness": {
+    "?Top": {
+      "_type": "Const",
+      "value": "alice"
+    }
+  },
+  "kb_file": "kinship_extended.pl",
+  "kb_source_hash": "11854e4325f1638b228c531d4feb20ce3c65d28576fab9efabb43992bc03be51",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "ancestor",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "alice"
+      },
+      {
+        "_type": "Const",
+        "value": "leaf6"
+      }
+    ]
+  }
+}

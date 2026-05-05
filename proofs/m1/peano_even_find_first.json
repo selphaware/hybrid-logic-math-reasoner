@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "even",
+    "args": [
+      {
+        "_type": "Const",
+        "value": 0
+      }
+    ]
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "Atom",
+        "pred": "even",
+        "args": [
+          {
+            "_type": "Const",
+            "value": 0
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    }
+  ]
+}

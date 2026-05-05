@@ -1,0 +1,17 @@
+{
+  "fixture": "edge_query_is_fact",
+  "query": "?- fact_pred(a).",
+  "expected_witness": {},
+  "kb_file": null,
+  "kb_source_hash": "4a116f9fdf1be72db63a468110477f68404ba9dd31e2b1e1d2c6608f03573a68",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "fact_pred",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "a"
+      }
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "fixture": "kinship",
+  "query": "?- ancestor(?A, carol).",
+  "expected_witness": {
+    "?A": {
+      "_type": "Const",
+      "value": "alice"
+    }
+  },
+  "kb_file": "kinship.pl",
+  "kb_source_hash": "daebc8f13db63cfb9ece8f002e14ed1804b30b493299060d077c4ebc3eab61f7",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "ancestor",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "alice"
+      },
+      {
+        "_type": "Const",
+        "value": "carol"
+      }
+    ]
+  }
+}

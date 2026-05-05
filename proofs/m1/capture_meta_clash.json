@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Atom",
+    "pred": "knows",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "socrates"
+      }
+    ]
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "ForAll",
+        "var": "X",
+        "body": {
+          "_type": "Implies",
+          "left": {
+            "_type": "Atom",
+            "pred": "exists",
+            "args": [
+              {
+                "_type": "Var",
+                "name": "X"
+              }
+            ]
+          },
+          "right": {
+            "_type": "Atom",
+            "pred": "knows",
+            "args": [
+              {
+                "_type": "Var",
+                "name": "X"
+              }
+            ]
+          }
+        }
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Atom",
+        "pred": "exists",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "socrates"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "Premise"
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 3,
+      "formula": {
+        "_type": "Implies",
+        "left": {
+          "_type": "Atom",
+          "pred": "exists",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "socrates"
+            }
+          ]
+        },
+        "right": {
+          "_type": "Atom",
+          "pred": "knows",
+          "args": [
+            {
+              "_type": "Const",
+              "value": "socrates"
+            }
+          ]
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "forallE",
+        "line_refs": [
+          1
+        ],
+        "box_refs": [],
+        "extra": {
+          "term": {
+            "_type": "term",
+            "value": {
+              "_type": "Const",
+              "value": "socrates"
+            }
+          }
+        }
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 4,
+      "formula": {
+        "_type": "Atom",
+        "pred": "knows",
+        "args": [
+          {
+            "_type": "Const",
+            "value": "socrates"
+          }
+        ]
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "impE",
+        "line_refs": [
+          3,
+          2
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    }
+  ]
+}

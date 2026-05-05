@@ -137,6 +137,20 @@ def _cmd_repl(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_regenerate_corpus(args: argparse.Namespace) -> int:
+    import sys
+    from pathlib import Path
+
+    _repo_root = Path(__file__).parent.parent.parent
+    _scripts = str(_repo_root / "scripts")
+    if _scripts not in sys.path:
+        sys.path.insert(0, _scripts)
+    from m1_corpus.regenerate import main  # noqa: PLC0415
+
+    main()
+    return 0
+
+
 def _cmd_demo(args: argparse.Namespace) -> int:
     from hlmr.demos import DEMOS
 
@@ -185,6 +199,11 @@ def main() -> None:
         help="demo name (omit to list available demos)",
     )
 
+    sub.add_parser(
+        "regenerate-corpus",
+        help="regenerate all proofs/m1/ fixtures and sidecar metadata",
+    )
+
     args = parser.parse_args()
 
     if args.command == "check":
@@ -195,6 +214,8 @@ def main() -> None:
         sys.exit(_cmd_repl(args))
     elif args.command == "demo":
         sys.exit(_cmd_demo(args))
+    elif args.command == "regenerate-corpus":
+        sys.exit(_cmd_regenerate_corpus(args))
     else:
         parser.print_help()
         sys.exit(2)

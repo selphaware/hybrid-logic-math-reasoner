@@ -18,9 +18,10 @@ from hlmr.kernel.errors import Verified
 from hlmr.log import SessionRecorder
 from hlmr.parse import ParseError, parse_file
 from hlmr.repl.commands import Command, CommandError, parse_command
+from hlmr.solve import _is_ground, _query_meta_names
 from hlmr.solve.render import RenderError, _saturate, render
 from hlmr.solve.sld import FreshNameGen, SLDState, candidates, resolve
-from hlmr.unify.substitution import Substitution, apply_to_formula
+from hlmr.unify.substitution import Substitution, apply_to_formula, apply_to_term
 
 # ---------------------------------------------------------------------------
 # Mutable REPL state
@@ -187,7 +188,17 @@ def _run_query_loop(
             else:
                 print("  Use: pick N, N, candidates, back, abort.", file=stdout)
 
-    # All goals exhausted — render proof
+    # All goals exhausted — check for underdetermined result before render
+    _sat_pre = _saturate(sld.subst)
+    _qmetas = _query_meta_names(goal)
+    if any(not _is_ground(apply_to_term(_sat_pre, Meta(n))) for n in _qmetas):
+        print(
+            "\nGoal resolved but no ground witness — query is underdetermined.",
+            file=stdout,
+        )
+        recorder.query_end("no_candidates")
+        return
+
     try:
         proof = render(sld, kb, goal)
     except RenderError as e:

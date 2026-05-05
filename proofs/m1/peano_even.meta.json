@@ -1,0 +1,41 @@
+{
+  "fixture": "peano_even",
+  "query": "?- even(s(s(s(s(0))))).",
+  "expected_witness": {},
+  "kb_file": "peano_even.pl",
+  "kb_source_hash": "f94e4c40f7a19c91c23c8d8503f45299bc7ec82fcd6073c1f3a0fcdf90e33de1",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "even",
+    "args": [
+      {
+        "_type": "Func",
+        "name": "s",
+        "args": [
+          {
+            "_type": "Func",
+            "name": "s",
+            "args": [
+              {
+                "_type": "Func",
+                "name": "s",
+                "args": [
+                  {
+                    "_type": "Func",
+                    "name": "s",
+                    "args": [
+                      {
+                        "_type": "Const",
+                        "value": 0
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

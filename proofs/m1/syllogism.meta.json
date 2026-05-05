@@ -1,0 +1,17 @@
+{
+  "fixture": "syllogism",
+  "query": "?- mortal(socrates).",
+  "expected_witness": {},
+  "kb_file": "syllogism.pl",
+  "kb_source_hash": "967ccd5df3a24d561ba3fcd255fecbf119694d3c080ae498df0adc3e8aa3be0f",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "mortal",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "socrates"
+      }
+    ]
+  }
+}

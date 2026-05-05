@@ -1,0 +1,29 @@
+{
+  "fixture": "finite_puzzle_4var",
+  "query": "?- ring4(a, b, c, d).",
+  "expected_witness": {},
+  "kb_file": "finite_puzzle_4var.pl",
+  "kb_source_hash": "a198dd3f6174b433628b077ff8d79dcf5bb814020e7fd83d6a54dfe16286dc57",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "ring4",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "a"
+      },
+      {
+        "_type": "Const",
+        "value": "b"
+      },
+      {
+        "_type": "Const",
+        "value": "c"
+      },
+      {
+        "_type": "Const",
+        "value": "d"
+      }
+    ]
+  }
+}

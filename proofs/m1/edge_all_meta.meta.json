@@ -1,0 +1,38 @@
+{
+  "fixture": "edge_all_meta",
+  "query": "?- triple(?A, ?B, ?C).",
+  "expected_witness": {
+    "?A": {
+      "_type": "Const",
+      "value": "a"
+    },
+    "?B": {
+      "_type": "Const",
+      "value": "b"
+    },
+    "?C": {
+      "_type": "Const",
+      "value": "c"
+    }
+  },
+  "kb_file": null,
+  "kb_source_hash": "46717a6168c6e5d22ee302161d91ba649563bdfccdb745c7e6049af9ce046c99",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "triple",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "a"
+      },
+      {
+        "_type": "Const",
+        "value": "b"
+      },
+      {
+        "_type": "Const",
+        "value": "c"
+      }
+    ]
+  }
+}

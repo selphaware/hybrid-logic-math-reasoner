@@ -1,0 +1,17 @@
+{
+  "fixture": "syllogism_andE",
+  "query": "?- athlete(socrates).",
+  "expected_witness": {},
+  "kb_file": "syllogism_andE.pl",
+  "kb_source_hash": "ea8519037aa0f73fb15cb527f203c994ce6ea17c4974e8b9e458db634e4dc679",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "athlete",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "socrates"
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "fixture": "syllogism_chained",
+  "query": "?- temporal(socrates).",
+  "expected_witness": {},
+  "kb_file": "syllogism_chained.pl",
+  "kb_source_hash": "9edc7ce542d553aaa9124d0f3c94d15ca627bad5773cb6bd27bd9e783c6e66c3",
+  "final_formula": {
+    "_type": "Atom",
+    "pred": "temporal",
+    "args": [
+      {
+        "_type": "Const",
+        "value": "socrates"
+      }
+    ]
+  }
+}
