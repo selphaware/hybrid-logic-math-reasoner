@@ -30,6 +30,7 @@ from hlmr.kernel.errors import (
     CheckFailure,
     EigenvarViolation,
     FormulaMismatch,
+    MalformedArithmetic,
     MissingExtra,
     OutOfScope,
     StructuralError,
@@ -688,6 +689,7 @@ _SIGS: dict[str, tuple[int, int, dict]] = {
     "existsE": (1, 1, {"eigenvar": "z"}),
     "eqRefl":  (0, 0, {}),
     "eqSubst": (2, 0, {"var": "v", "template": Atom("P", (Var("v"),))}),
+    "arithEval": (0, 0, {}),
 }
 
 # Minimal base: a discharged box (lines 1–2 inside; line 1 inaccessible from line 4+)
@@ -703,10 +705,11 @@ def test_rule_rejects_malformed_ref_app(rule: str) -> None:
     n_lines, n_boxes, oos_extra = _SIGS[rule]
 
     # 1. RuleApp() with 0 refs → WrongRefCount for most rules;
-    #    WrongFormulaShape for eqRefl which correctly takes (0, 0).
+    #    WrongFormulaShape for eqRefl (takes (0,0), checks Equals);
+    #    MalformedArithmetic for arithEval (takes (0,0), checks arithmetic atom).
     r1 = check_proof(Proof(_BASE + (ProofLine(4, P, RuleApp(rule), 0),)))
     assert isinstance(r1, CheckFailure)
-    assert isinstance(r1.reason, (WrongRefCount, WrongFormulaShape))
+    assert isinstance(r1.reason, (WrongRefCount, WrongFormulaShape, MalformedArithmetic))
 
     # 2. Correct ref counts but all line_refs point to discharged line 1 → OutOfScope.
     if n_lines > 0:

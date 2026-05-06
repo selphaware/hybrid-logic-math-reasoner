@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from fractions import Fraction
 
 # ---------------------------------------------------------------------------
 # Terms
@@ -21,7 +22,13 @@ class Var(Term):
 
 @dataclass(frozen=True)
 class Const(Term):
-    value: object
+    value: str | int | Fraction
+
+    def __post_init__(self) -> None:
+        if isinstance(self.value, bool):
+            raise TypeError("Const cannot wrap bool (Python bools are ints)")
+        if isinstance(self.value, float):
+            raise TypeError("Const cannot wrap float (use Fraction for exact rationals)")
 
     def __repr__(self) -> str:
         return repr(self.value)

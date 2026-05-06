@@ -116,3 +116,16 @@ class GoalMismatch(RuleError):
 class UnresolvedMeta(RuleError):
     line: int
     meta_name: str
+
+
+@dataclass(frozen=True)
+class MalformedArithmetic(RuleError):
+    line: int
+    formula: Formula
+    reason: str
+
+
+@dataclass(frozen=True)
+class EvaluationFalse(RuleError):
+    line: int
+    formula: Formula

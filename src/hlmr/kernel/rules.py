@@ -7,18 +7,24 @@ structural well-formedness by check_proof before a rule checker is called.
 
 from __future__ import annotations
 
+from fractions import Fraction
 from typing import Callable
 
 from hlmr.ir.formula import (
     And,
+    Atom,
     Bot,
+    Const,
     Equals,
     Exists,
     ForAll,
+    Func,
     Iff,
     Implies,
+    Meta,
     Not,
     Or,
+    Term,
     Var,
     free_vars,
     subst,
@@ -28,7 +34,9 @@ from hlmr.ir.proof import Proof, ProofLine
 from hlmr.kernel.errors import (
     BadBoxRef,
     EigenvarViolation,
+    EvaluationFalse,
     FormulaMismatch,
+    MalformedArithmetic,
     MissingExtra,
     OutOfScope,
     RuleError,
@@ -632,6 +640,147 @@ def _eqSubst(line: ProofLine, proof: Proof) -> RuleError | None:
 
 
 # ---------------------------------------------------------------------------
+# Arithmetic evaluation (arithEval — the 23rd rule, added in M2)
+# ---------------------------------------------------------------------------
+
+
+def _eval_term(t: Term) -> int | Fraction | None:
+    """Return the numeric value of t, or None if t is non-evaluable.
+
+    Defence-in-depth: rejects bool, float, Meta, and Var independently
+    of any upstream guard (§9.6–9.9 of ARITH_EVAL_DESIGN.md).
+    """
+    match t:
+        case Const(value=v):
+            if isinstance(v, bool):      # bool is int subclass — reject
+                return None
+            if isinstance(v, float):     # defence-in-depth
+                return None
+            if isinstance(v, int):
+                return v
+            if isinstance(v, Fraction):
+                return v
+            return None                  # str, anything else
+
+        case Func(name="+", args=(a, b)):
+            va, vb = _eval_term(a), _eval_term(b)
+            if va is None or vb is None:
+                return None
+            return va + vb
+
+        case Func(name="-", args=(a, b)):
+            va, vb = _eval_term(a), _eval_term(b)
+            if va is None or vb is None:
+                return None
+            return va - vb
+
+        case Func(name="-", args=(a,)):  # unary negation (arity 1)
+            va = _eval_term(a)
+            if va is None:
+                return None
+            return -va
+
+        case Func(name="*", args=(a, b)):
+            va, vb = _eval_term(a), _eval_term(b)
+            if va is None or vb is None:
+                return None
+            return va * vb
+
+        case Func(name="/", args=(a, b)):
+            va, vb = _eval_term(a), _eval_term(b)
+            if va is None or vb is None:
+                return None
+            if vb == 0:
+                return None              # division by zero
+            return Fraction(va) / Fraction(vb)
+
+        case Func(name="^", args=(a, b)):
+            va, vb = _eval_term(a), _eval_term(b)
+            if va is None or vb is None:
+                return None
+            if isinstance(vb, bool) or not isinstance(vb, int):
+                return None              # exponent must be int (not bool)
+            if va == 0 and vb <= 0:
+                return None              # 0^0 contested; 0^negative undefined
+            if vb < 0:
+                return Fraction(va) ** vb  # forces Fraction, avoids float
+            return va ** vb              # int^int -> int; Fraction^int -> Fraction
+
+        case _:                          # Var, Meta, unknown Func, wrong arity
+            return None
+
+
+def _eval_atom(f: Atom | Equals) -> bool | None:
+    """Return the boolean value of a ground arithmetic atom, or None
+    if non-evaluable."""
+    match f:
+        case Atom(pred="<", args=(a, b)):
+            va, vb = _eval_term(a), _eval_term(b)
+            return None if (va is None or vb is None) else (va < vb)
+        case Atom(pred="<=", args=(a, b)):
+            va, vb = _eval_term(a), _eval_term(b)
+            return None if (va is None or vb is None) else (va <= vb)
+        case Atom(pred=">", args=(a, b)):
+            va, vb = _eval_term(a), _eval_term(b)
+            return None if (va is None or vb is None) else (va > vb)
+        case Atom(pred=">=", args=(a, b)):
+            va, vb = _eval_term(a), _eval_term(b)
+            return None if (va is None or vb is None) else (va >= vb)
+        case Atom(pred="!=", args=(a, b)):
+            va, vb = _eval_term(a), _eval_term(b)
+            return None if (va is None or vb is None) else (va != vb)
+
+        case Atom(pred="plus", args=(a, b, c)):
+            va, vb, vc = _eval_term(a), _eval_term(b), _eval_term(c)
+            if va is None or vb is None or vc is None:
+                return None
+            return va + vb == vc
+        case Atom(pred="minus", args=(a, b, c)):
+            va, vb, vc = _eval_term(a), _eval_term(b), _eval_term(c)
+            if va is None or vb is None or vc is None:
+                return None
+            return va - vb == vc
+        case Atom(pred="times", args=(a, b, c)):
+            va, vb, vc = _eval_term(a), _eval_term(b), _eval_term(c)
+            if va is None or vb is None or vc is None:
+                return None
+            return va * vb == vc
+        case Atom(pred="divides", args=(a, b, c)):
+            va, vb, vc = _eval_term(a), _eval_term(b), _eval_term(c)
+            if va is None or vb is None or vc is None:
+                return None
+            if vb == 0:
+                return None
+            return Fraction(va) / Fraction(vb) == vc
+
+        case Equals(lhs=lhs, rhs=rhs):
+            vl, vr = _eval_term(lhs), _eval_term(rhs)
+            if vl is None or vr is None:
+                return None
+            return vl == vr
+
+        case _:
+            return None  # unknown predicate, wrong arity, non-Atom/Equals shape
+
+
+def _arithEval(line: ProofLine, proof: Proof) -> RuleError | None:
+    if err := _check_refs(line, proof, expected_lines=0, expected_boxes=0):
+        return err
+    f = line.formula
+    if not isinstance(f, (Atom, Equals)):
+        return MalformedArithmetic(
+            line.number, f,
+            "arithEval requires Atom or Equals, got " + type(f).__name__,
+        )
+    result = _eval_atom(f)
+    if result is None:
+        return MalformedArithmetic(line.number, f, "non-evaluable arithmetic atom")
+    if result is False:
+        return EvaluationFalse(line.number, f)
+    return None  # result is True — accept
+
+
+# ---------------------------------------------------------------------------
 # Dispatch table
 # ---------------------------------------------------------------------------
 
@@ -658,4 +807,5 @@ RULES: dict[str, RuleChecker] = {
     "existsE": _existsE,
     "eqRefl": _eqRefl,
     "eqSubst": _eqSubst,
+    "arithEval": _arithEval,
 }
