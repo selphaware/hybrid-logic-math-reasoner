@@ -1,27 +1,100 @@
 # HLMR — Hybrid Logic-Math Reasoner
 
-HLMR is a Python 3.12 interactive theorem prover for first-order logic. It
-supports Prolog-style Horn-clause knowledge bases, first-order Robinson
-unification, manual SLD resolution (you pick the clauses; the system finds
-the bindings), and renders every solved query as a Fitch-style
-natural-deduction proof that the trusted kernel verifies.
+A Python 3.12 theorem prover that finds proofs of logical and mathematical
+goals over a user-supplied knowledge base, renders every result as a
+Fitch-style natural-deduction proof, and verifies it through a small
+trusted kernel before reporting success.
 
-**Status:** Milestone 1 complete. The system is a working manual theorem prover
-over Horn-clause knowledge bases with kernel-verified Fitch-style proofs.
-Milestone 2 (arithmetic via Z3 and SymPy) is the next planned increment.
-
-See `prd.md` for the full spec and `prd_milestone_1.md` for M1 details.
+**Status:** M0 and M1 shipped. M2 (arithmetic + dispatcher) is mid-flight
+— spec frozen, all three Opus 4.7 design docs approved, Sonnet
+implementation up next. M3 (theory-growth POC) is spec-to-write.
 
 ---
 
-## What's working
+## What HLMR is for
 
-**Milestone 0** — the trusted core:
+HLMR fills a specific gap in the existing landscape:
+
+- **Pure logic tools** (Pandora, Carnap, Logitext) handle natural deduction
+  but no arithmetic and no goal-directed search.
+- **Pure math tools** (SymPy, Mathematica, Wolfram Alpha) handle numbers
+  but produce no inference trace.
+- **Logic programming** (Prolog, λProlog) does goal-directed search but
+  doesn't render proofs in a form a student or reviewer can audit step
+  by step.
+- **Frontier LLMs** do everything plausibly and nothing checkably.
+  Soundness is not a property they have.
+
+HLMR is a single engine where (a) the user writes domain knowledge as
+Horn clauses, (b) goals can contain unknowns, (c) proofs come out in a
+presentation-friendly ND format, and (d) every proof is mechanically
+checked by a kernel small enough to audit.
+
+### The main goals, in order
+
+1. **Soundness through a small trusted kernel.** The kernel implements the
+   23 ND rules (22 in M0–M1 plus `arithEval` in M2) and nothing else. It
+   imports only `ir/` and stdlib — test-enforced from M0. Search modules,
+   solvers, dispatchers, and (later) conjecture generators may construct
+   candidate proofs but never declare them verified. Only the kernel does
+   that. **Construction may be wrong; verification cannot.**
+
+2. **Two interaction modes against the same engine.** *Manual mode* (M1,
+   shipped): you state a goal with unknowns, the system shows you every
+   applicable clause at each step, you pick, the unifier finds the
+   bindings. *Automated mode* (M3): the system searches, you watch.
+   Same kernel, same IR, same proof format.
+
+3. **Hybrid logic + math.** First-order logic with quantifiers (M0–M1)
+   plus linear arithmetic over ℤ/ℚ, finite-domain constraints, and
+   symbolic algebraic equations (M2, via Z3 and SymPy). The kernel
+   verifies arithmetic witnesses by ground evaluation — Z3's internal
+   proof calculus is never translated into Fitch ND.
+
+4. **Long-term: a proof-checked theory growth engine.** Starting M3, the
+   system grows reusable theorem libraries from small axiom seeds:
+   generate typed conjectures, filter trivial/duplicate/ill-typed ones,
+   try to refute via countermodel search, attempt proof, kernel-check,
+   admit only verified theorems. The success metric is **library reuse
+   and proof shortening**, not raw theorem count. See
+   [`docs/strategic_direction.md`](docs/strategic_direction.md) for the
+   full vision.
+
+The end goal is a usable, sound, extensible reasoner with a growing
+verified theorem library — **not** a frontier-grade general
+mathematician, **not** a Mathlib clone, **not** a Lean replacement.
+Different foundations, different scale, different community model.
+
+### The motivating example (demoable by end of M2)
+
+```
+KB:
+  prime(2). prime(3). prime(5). prime(7).
+
+Query:
+  ?- prime(?P), greater_than(?P, 2), less_than(?P, 6), not_equal(?P, 4).
+
+Answer:
+  ?P = 5.
+```
+
+The first goal runs SLD over the KB; the inequality goals dispatch to Z3;
+the witness `?P = 5` is verified by the kernel via the new `arithEval`
+rule; and the result is a Fitch proof you can audit line-by-line.
+
+See [`prd.md`](prd.md) for the canonical spec and per-milestone PRDs for
+implementation detail.
+
+---
+
+## What's working today
+
+**Milestone 0** — the trusted core (shipped):
 - Fitch-style natural-deduction proof kernel (22 ND rules)
 - CLI proof checker (`hlmr check`) and pretty-printer (`hlmr show`)
 - JSON proof format with schema versioning
 
-**Milestone 1** — the manual solver:
+**Milestone 1** — the manual solver (shipped):
 - Horn-clause knowledge bases parsed from Prolog-flavoured `.pl` files
 - First-order Robinson unification with occurs check
 - Manual SLD resolution: you pick each clause; the system binds variables
@@ -31,11 +104,21 @@ See `prd.md` for the full spec and `prd_milestone_1.md` for M1 details.
 - Four canonical demos with kernel-verified proof artifacts
 
 **M1 hardening** — 30-fixture proof corpus and adversarial tests:
-- `proofs/m1/` — 26 new fixtures (kinship chains, Peano plus/times/lt, capture-avoidance
-  stress, edge cases) plus the 4 original demo proofs; each with sidecar metadata.
-  See `proofs/m1/README.md` for the full index and `proofs/m1/HARDENING_FINDINGS.md`
-  for property-test findings.
+- `proofs/m1/` — 26 new fixtures (kinship chains, Peano plus/times/lt,
+  capture-avoidance stress, edge cases) plus the 4 original demo proofs;
+  each with sidecar metadata. See `proofs/m1/README.md` for the full index
+  and `proofs/m1/HARDENING_FINDINGS.md` for property-test findings.
 - Regenerate the corpus: `python -m hlmr regenerate-corpus`
+
+**Milestone 2** — arithmetic and dispatch (in progress):
+- Spec frozen at `prd_milestone_2.md` (Draft v2, post Opus consistency review)
+- Three Opus 4.7 design docs approved and in place:
+  - `src/hlmr/kernel/ARITH_EVAL_DESIGN.md` — the new `arithEval` kernel rule
+  - `src/hlmr/dispatch/DISPATCH_DESIGN.md` — constraint classifier and router
+  - `src/hlmr/solve/RENDER_M2_DESIGN.md` — renderer extension for arithmetic witnesses
+- Implementation (Sonnet 4.6) has not yet started. The kernel rule, the
+  Z3 and SymPy bridges, the dispatcher, and the renderer extension are
+  the next deliverables.
 
 ---
 
@@ -208,6 +291,11 @@ pick, `abort` to cancel, `candidates` to redisplay the list.
 `examples/m1/plus.pl` encodes Peano addition; `examples/m1/mult.pl` adds
 multiplication. Both predicates run forward (compute a result) and backward
 (solve for an unknown argument).
+
+> Note: this is structural arithmetic via successor terms — `s(s(0))` for 2,
+> `s(s(s(0)))` for 3 — purely SLD over a Horn-clause KB. Real arithmetic
+> with literal numerics, `<`, `>`, `+`, `*` arrives in M2 with the Z3
+> bridge and the `arithEval` kernel rule.
 
 **2 + 1 = ?**
 
@@ -394,39 +482,111 @@ ruff check src/hlmr
 ## Project structure
 
 ```
-prd.md                 Canonical strategic spec (read first)
-prd_milestone_1.md     M1 spec (KB, unification, manual SLD, REPL, logging)
+prd.md                          Canonical strategic spec, v4 (read first)
+prd_milestone_0.md              M0 spec — kernel and IR (shipped)
+prd_milestone_1.md              M1 spec — KB, unification, manual SLD, REPL (shipped)
+prd_milestone_2.md              M2 spec — arithmetic and dispatch (in progress)
+docs/strategic_direction.md     Long-term theory-growth vision (informs M3+)
+
 src/hlmr/
   ir/                  Frozen-dataclass formula/proof types + JSON serialisation
-  kernel/              Trusted proof checker (22 ND rules)
+  kernel/              Trusted proof checker (22 ND rules; arithEval lands in M2)
+    ARITH_EVAL_DESIGN.md         M2 — Opus 4.7 design for the new kernel rule
   unify/               Robinson unification with occurs check
   solve/               SLD resolution engine + SLD-to-Fitch renderer
+    RENDER_DESIGN.md             M1 renderer (shipped)
+    RENDER_M2_DESIGN.md          M2 renderer extension — Opus 4.7 design
+  dispatch/            (M2) Constraint classifier and solver router
+    DISPATCH_DESIGN.md           M2 dispatcher — Opus 4.7 design
+  solvers/             (M2) Z3 and SymPy bridges
   parse/               Lark-based clause and query parser
   repl/                Interactive REPL (prompt_toolkit)
   log/                 JSONL session recorder
   demos.py             Four canonical M1 demo functions
   cli.py               argparse entry point
+
 tests/                 pytest + hypothesis test suites
 examples/m1/           Four .pl knowledge-base files for the demos
 proofs/m0/             16 example M0 proofs (13 valid + 3 deliberately broken)
-proofs/m1/             Four canonical M1 proof outputs (generated by demos)
+proofs/m1/             30 fixtures: 4 demo outputs + 26 hardening fixtures
+corpus/                Logged sessions (gitignored)
 ```
+
+Hard structural rules, enforced by tests:
+
+- `kernel/` imports only from `ir/` and stdlib.
+- No module replicates ND rule logic. The kernel is the only place rule
+  semantics live.
+- From M2 onwards: `solvers/` is the only place Z3 and SymPy are imported.
+  Other modules go through its interface.
+- `theory/`, `conjecture/`, `countermodel/`, `search/`, `growth/` (all M3+)
+  may construct candidate proofs but never verify them. Only the kernel
+  produces verified status.
 
 ---
 
-## Project status and roadmap
+## Roadmap
 
-Full specs: [`prd.md`](prd.md) (canonical) and [`prd_milestone_1.md`](prd_milestone_1.md) (M1 details).
+Full specs: [`prd.md`](prd.md) (canonical, v4) and per-milestone PRDs.
+Long-term direction: [`docs/strategic_direction.md`](docs/strategic_direction.md).
 
 | Milestone | Status | Adds |
 |---|---|---|
-| M0 | **complete** | Kernel, IR, CLI checker |
-| M1 | **complete** | KB, unification, manual SLD, REPL, logging |
-| M2 | not started | Z3 + SymPy arithmetic bridge, auto-dispatcher |
-| M3 | not started | Automated search engine, optional learned ranker |
+| **M0** | shipped | Kernel (22 ND rules), IR, CLI proof checker |
+| **M1** | shipped | Horn-clause KB, unification, manual SLD, ND renderer, REPL, parser, JSONL logging |
+| **M2** | spec frozen, design approved, implementation pending | Z3 + SymPy bridges, dispatcher, `arithEval` kernel rule, typed metavariables, six-outcome classification |
+| **M3** | spec to write | Theory library with metadata, sort-tagged predicates, typed conjecture generation, countermodel search, automated proof search with library reuse, growth-loop orchestration |
+| **M4** | planned | Second growth domain (partial orders) plus full multi-sort decision |
+| **M5** | planned | First multi-sort domain (`Point`, `Line`); incidence/betweenness/collinearity |
+| **M6+** | optional, deferred | Additional theory seeds: monoids/groups, simple number theory over M2's arithmetic, finite-domain combinatorics, geometry sub-tracks |
 
-M2 adds arithmetic predicates (`<`, `>`, `+`, `*`) via a Z3/SymPy bridge,
-letting the system handle linear arithmetic and quadratic constraints without
-changing the kernel. M3 adds automated proof search so the user no longer
-needs to pick every clause manually, plus an optional learned ranker trained
-on the M1 session corpus.
+Each milestone ships standalone and strictly extends its predecessor. The
+kernel changes exactly twice between M0 and M2 (the M1 `Meta` rejection
+check and the M2 `arithEval` rule); after M2, any further kernel change
+requires explicit design review per `prd.md` §4.
+
+### What M2 adds
+
+Arithmetic predicates (`<`, `>`, `+`, `*`, `=`) over ℤ and ℚ, finite-domain
+constraints, and symbolic algebraic equations dispatched to SymPy. The
+dispatcher classifies each goal independently — KB clauses go through the
+M1 SLD path unchanged; arithmetic goals route to Z3 or SymPy; anything
+else rejects as `OutsideFragment`. Witnesses are verified by the kernel
+through `arithEval` (ground evaluation), never by translating Z3's
+internal proof calculus.
+
+### What M3 adds — the theory growth loop
+
+M3 is where the strategic direction becomes demonstrable. Starting from
+the three equivalence-relation axioms, the system generates typed
+conjectures, filters trivial / duplicate / ill-typed ones, refutes false
+ones via countermodel search, attempts proof on the survivors, and admits
+only kernel-checked theorems to a growing library. The success signal is
+not "we proved 12 theorems" but "theorem 12 used theorem 7 used theorem 3,
+and the average proof length dropped after lemma reuse kicked in." That
+is growth.
+
+The invariant that makes this whole approach work:
+
+> **Only kernel-checked proofs create new theorems.** Search may be wrong,
+> incomplete, biased, or flat-out hallucinatory. None of that admits a
+> single false theorem to the library.
+
+### What HLMR is not
+
+Restating, because scope discipline is load-bearing:
+
+- Not "all of mathematics" — Gödel forbids it for any consistent theory
+  strong enough to express arithmetic.
+- Not a Mathlib clone or Lean replacement.
+- Not a frontier neural prover. No transformer, no learned tactic policy
+  at the foundation level. An optional small ranker may earn its place
+  much later (gated on logged-corpus volume), but the system must work
+  fully without it.
+- Not an automated theorem prover for unrestricted math. The fragment is
+  bounded by the M0–M2 architectural commitments.
+- Not brute-force conjecture discovery. Conjectures are generated through
+  structured templates and informed recombination, never unstructured
+  enumeration.
+
+If a feature can only be justified by appeal to one of the above, push back.
