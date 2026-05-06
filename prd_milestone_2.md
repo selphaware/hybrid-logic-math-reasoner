@@ -1,8 +1,9 @@
 # HLMR Milestone 2 — Arithmetic and Dispatch
 
-**Status:** Draft v2 (revised after Opus 4.7 consistency review)
+**Status:** Draft v2.1 (strategic-direction alignment; substance unchanged)
 **Supplements:** `prd.md` (canonical project spec, do not contradict)
-**Last updated:** 2026-05-04
+**Strategic context:** `docs/strategic_direction.md` (M3+ theory-growth vision; informs how M2's bridges and dispatcher will be reused but does not affect M2's own scope)
+**Last updated:** 2026-05-06
 **Predecessor milestone:** M1 — see `prd_milestone_1.md`. M2 work
 should not begin until M1 is complete and its test suite is green
 (≥614 tests passing, all PRD §12.2 coverage targets met).
@@ -86,7 +87,7 @@ of any kind. Those remain explicitly out of scope per `prd.md` §6.2.
 | **0** | kernel, IR, CLI checker | hand-built proofs verify |
 | **1** | KB, unification, manual SLD, ND renderer, REPL, parser, logging | kinship, Zebra, Peano even |
 | **2 (this)** | Z3 + SymPy bridges, dispatcher, typed metas, `arithEval` kernel rule | the §2 prime example, `x² − 5x + 6 = 0` |
-| **3** | search engine, optional learned suggester | benchmarks (FOLIO, ProofWriter) |
+| **3** | theory growth engine: conjecture generation, countermodel search, automated proof search with library reuse | equivalence-relations theory grown from three axioms |
 
 The kernel changes once in M2 — exactly one new rule, `arithEval`,
 designed by Opus before any code is written. This is the second
@@ -619,17 +620,6 @@ Per Opus design plus:
   defense-in-depth coverage that the kernel catches dispatcher
   bugs.
 
-**Open question for dispatcher design (from M1 hardening):** Should the
-`Underdetermined` outcome generalise to cover pure-SLD non-ground
-witnesses? M1 hardening found that universal-fact clauses (e.g. `p(X).`)
-satisfy queries like `?- p(?A).` via SLD without binding `?A` to a concrete
-term.  The provisional M1 fix returns `(Substitution, None)` from
-`manual_solve` and prints "underdetermined" to the user.  The M2 dispatcher
-design doc (`DISPATCH_DESIGN.md`) must decide: unify this with the
-`Underdetermined` outcome, add a `pure-SLD-underdetermined` sub-case, or
-teach the renderer to emit universal-fact proofs.
-See `proofs/m1/HARDENING_FINDINGS.md`.
-
 ---
 
 ## 10. Renderer extension — `src/hlmr/solve/render.py` `[REQUIRES OPUS 4.7 — DESIGN]`
@@ -924,15 +914,6 @@ makes M1 demo regression a hard requirement; the dispatcher
 classifies non-arithmetic-operator goals as `KB` and the M1 SLD
 path is unchanged.
 
-**Pure-SLD underdetermined witnesses.** Universal-fact clauses
-(e.g. `p(X).`) can satisfy a query `?- p(?A).` via SLD without ever
-grounding `?A`. M1 hardening (`proofs/m1/HARDENING_FINDINGS.md`) introduced
-a provisional `(Substitution, None)` return from `manual_solve`; the M2
-dispatcher design must decide whether to unify this with the `Underdetermined`
-outcome or handle it separately. Until resolved, pure-SLD underdetermined
-queries display "Goal resolved but no ground witness — query is
-underdetermined." rather than crashing.
-
 **Schema v1/v2 deserialisation drift.** Loading old M1 proof JSONs
 under M2 must produce structurally-identical IR objects to what
 M1 originally created. Mitigation: round-trip test that loads each
@@ -1003,6 +984,7 @@ not_equal(?P, 4)     → Z3 (LIA)
 > :quit
 ```
 
-That is the M2 user experience. M3 will add automated search so
-the user no longer has to `pick` SLD candidates manually for the
-KB portion of mixed-goal queries.
+That is the M2 user experience. M3 will add automated proof search
+(so the user no longer picks SLD candidates manually) as part of
+the broader theory-growth engine described in
+`docs/strategic_direction.md`.
