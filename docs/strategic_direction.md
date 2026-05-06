@@ -1,6 +1,6 @@
 # HLMR Strategic Direction — Proof-Checked Theory Growth Engine
 
-**Status:** Standing reference for the long-term vision
+**Status:** Standing reference for the long-term vision (v1.1 — added §6.9 and §11.7 on contested mathematical content)
 **Audience:** Anyone reading the HLMR repo who wants to understand where M3+ is heading
 **Companion to:** `prd.md` (canonical project spec; this document defers to it on architectural commitments and milestone scope)
 **Last updated:** 2026-05-06
@@ -427,6 +427,90 @@ These signals are accumulated as the library grows and the loop
 runs more iterations. Early in a theory's growth, the score is
 necessarily noisy; later it stabilises.
 
+### 6.9 Conventions as declared axioms
+
+Some mathematical statements are contested between conventions
+rather than universally true. The textbook example is `0^0`:
+combinatorics, discrete maths, polynomial rings, and most
+programming languages define it as 1; real analysis treats it as
+undefined because the limit of `x^y` as both vary doesn't exist.
+Both positions are correct within their domain. Other examples
+in the same shape: the result of `mod` with negative operands
+(C-style truncation versus Python-style floor); the empty
+product (usually 1, but contextual); indexing conventions for
+sums and products; branch-cut choices for `√` and `log`; the
+behaviour of operations on empty sets, empty sequences, or zero
+arguments. In each case, multiple internally-consistent
+conventions exist and working mathematicians genuinely disagree
+about which to adopt as default.
+
+The principle: **the kernel never silently asserts a contested
+statement.** When a conjecture or a proof step requires such a
+statement, the kernel rejects, and the convention enters the
+proof through a declared axiom in the theory seed. This keeps
+the trust boundary clean (no domain-awareness in trusted code,
+no configuration flags that could be misset) and makes every
+admitted theorem self-documenting (its dependency chain shows
+exactly which conventions it rests on).
+
+Concretely, for `0^0`:
+
+- The kernel's `arithEval` rule rejects `0^0` with
+  `MalformedArithmetic` (per `prd_milestone_2.md` §6.4).
+- A combinatorics theory seed that needs `0^0 = 1` declares it
+  as an axiom (e.g. `axiom pow_zero_zero: 0^0 = 1`).
+- A real-analysis theory seed simply doesn't declare it; any
+  conjecture requiring `0^0` either fails to prove or finds a
+  proof route that avoids the case.
+- Any theorem that uses the convention cites `pow_zero_zero` in
+  its dependency list. A reader can see at a glance which
+  theorems are convention-dependent and decide for themselves
+  whether to accept the convention.
+
+For the M3 growth loop this creates a natural feedback path.
+When proof search fails because a needed step requires a
+convention not in the current axiom set, the system has options:
+
+- Record the conjecture as `failed_proof_attempt` and move on —
+  the safe default.
+- Mine the missing convention as a sub-conjecture (per §6.4),
+  attempt to prove it from existing axioms, and if that fails,
+  record the convention itself as `open` — known to be needed
+  for downstream theorems but not derivable from current axioms.
+- Surface the open convention to the user: "Conjecture C
+  requires `0^0 = 1` to be admitted as an axiom. Adopt this
+  convention for the current theory? [yes / no / defer]" If
+  accepted, the convention joins the axiom set as a
+  *user-declared decision*, and the original conjecture goes
+  back into the proof queue.
+
+The third option — interactive convention adoption — is what
+makes the system pedagogically transparent. The user sees that
+adopting a convention is a choice they're making, not a hidden
+assumption baked into the prover. The resulting library carries
+that choice as a declared axiom any reader can inspect.
+
+The pattern generalises. For any contested case, the design rule
+is the same: kernel rejects on contested ground, theory seeds
+declare conventions as axioms, the growth loop surfaces missing
+conventions to the user as auditable decisions. This applies
+uniformly to:
+
+- Arithmetic edge cases (`0^0`, `0!`, integer division semantics
+  with negative operands, `mod` semantics).
+- Operator behaviour at boundary inputs (empty sets, empty
+  sequences, the empty product, the empty sum).
+- Order-of-arguments choices for non-commutative operations
+  where multiple sensible conventions exist.
+- Branch choices for multi-valued operations (`√`, `log`,
+  fractional powers).
+- Default behaviour of partial functions on inputs where they
+  are not naturally defined.
+
+In every case, the layer above the kernel is where flexibility
+lives, where it is visible and audited. The kernel itself stays
+uncompromisingly conservative.
+
 ---
 
 ## 7. Search as the central design problem
@@ -695,6 +779,23 @@ The success of a theory-growth run is measured by reuse and
 proof shortening, not by raw theorem count. A library of 12
 theorems where later proofs reuse earlier ones is a far better
 result than a library of 200 disconnected facts.
+
+### 11.7 Contested mathematical content stays out of the kernel
+
+The kernel never silently asserts a statement on which
+mathematicians genuinely disagree. Contested cases (`0^0`, `mod`
+with negative operands, empty product behaviour, branch-cut
+choices, and similar) are rejected at the kernel level and
+admitted (or not) through declared axioms in the relevant theory
+seed. See §6.9 for the full pattern.
+
+This preserves the trust-boundary discipline — the kernel has no
+notion of "domain" or "convention" and cannot be misconfigured
+into a soundness violation — while leaving conventions fully
+expressible at the axiom layer where they are visible, auditable,
+and (in the M3 growth loop) interactively adoptable by the user.
+The kernel stays uncompromisingly conservative; flexibility
+lives one layer up.
 
 ---
 
