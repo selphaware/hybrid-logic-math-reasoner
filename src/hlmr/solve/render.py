@@ -16,7 +16,13 @@ from hlmr.ir.formula import (
 from hlmr.ir.justification import Premise, RuleApp
 from hlmr.ir.kb import Clause, KnowledgeBase
 from hlmr.ir.proof import Proof, ProofLine
-from hlmr.solve.sld import SLDState, SLDStep, _vars_in_order
+from hlmr.solve.sld import (
+    ClauseResolvedStep,
+    DispatcherResolvedStep,
+    SLDState,
+    SLDStep,
+    _vars_in_order,
+)
 from hlmr.unify.substitution import Substitution, apply_to_formula, apply_to_term
 
 
@@ -181,7 +187,15 @@ def _build_step_tree(history: tuple[SLDStep, ...]) -> list[list[int]]:
             else:
                 stack[-1] = (parent_idx, remaining)
 
-        body_len = len(step.clause_renamed.body)
+        match step:
+            case ClauseResolvedStep(clause_renamed=renamed):
+                body_len = len(renamed.body)
+            case DispatcherResolvedStep():
+                # Dispatcher steps are always leaves — no body atoms to resolve.
+                # Rendering of DispatcherResolvedStep arrives in M2 Task C.
+                raise NotImplementedError(
+                    "DispatcherResolvedStep rendering arrives in M2 Task C"
+                )
         if body_len > 0:
             stack.append((i, body_len))
 

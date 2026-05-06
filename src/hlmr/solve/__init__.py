@@ -7,6 +7,8 @@ from hlmr.kernel.check import check_proof
 from hlmr.kernel.errors import Verified
 from hlmr.solve.render import RenderError, _saturate, render
 from hlmr.solve.sld import (
+    ClauseResolvedStep,
+    DispatcherResolvedStep,
     FreshNameGen,
     SLDState,
     SLDStep,
@@ -16,6 +18,8 @@ from hlmr.solve.sld import (
 from hlmr.unify.substitution import Substitution, apply_to_term
 
 __all__ = [
+    "ClauseResolvedStep",
+    "DispatcherResolvedStep",
     "FreshNameGen",
     "RenderError",
     "SLDState",

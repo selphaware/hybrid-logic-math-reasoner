@@ -44,7 +44,7 @@ from hlmr.solve.render import (
     _term_has_meta,
     render,
 )
-from hlmr.solve.sld import FreshNameGen, SLDState, SLDStep, _vars_in_order, resolve
+from hlmr.solve.sld import ClauseResolvedStep, FreshNameGen, SLDState, SLDStep, _vars_in_order, resolve
 from hlmr.unify.substitution import Substitution, apply_to_formula, apply_to_term
 
 # ---------------------------------------------------------------------------
@@ -251,7 +251,7 @@ def test_premise_var_only_in_body() -> None:
 
 def test_step_tree_single_fact() -> None:
     # One step, fact clause (no body).
-    step = SLDStep(
+    step = ClauseResolvedStep(
         goal_resolved=Atom("p", ()),
         clause_used=Clause("p", Atom("p", ())),
         clause_renamed=Clause("p", Atom("p", ())),
@@ -264,9 +264,9 @@ def test_step_tree_single_fact() -> None:
 def test_step_tree_linear_chain() -> None:
     # Demo 4 shape: root (body=1) → child (body=1) → leaf (body=0)
     c2 = Clause("c2", Atom("p", ()), (Atom("q", ()),))
-    step0 = SLDStep(Atom("p", ()), c2, c2, {})
-    step1 = SLDStep(Atom("q", ()), c2, c2, {})
-    step2 = SLDStep(Atom("q", ()), Clause("fact", Atom("q", ())), Clause("fact", Atom("q", ())), {})
+    step0 = ClauseResolvedStep(Atom("p", ()), c2, c2, {})
+    step1 = ClauseResolvedStep(Atom("q", ()), c2, c2, {})
+    step2 = ClauseResolvedStep(Atom("q", ()), Clause("fact", Atom("q", ())), Clause("fact", Atom("q", ())), {})
     children = _build_step_tree((step0, step1, step2))
     assert children == [[1], [2], []]
 
@@ -276,10 +276,10 @@ def test_step_tree_binary_root() -> None:
     c_root = Clause("r", Atom("r", ()), (Atom("a", ()), Atom("b", ())))
     c_leaf = Clause("leaf", Atom("x", ()))
     c_single = Clause("s", Atom("b", ()), (Atom("c", ()),))
-    step0 = SLDStep(Atom("r", ()), c_root, c_root, {})
-    step1 = SLDStep(Atom("a", ()), c_leaf, c_leaf, {})
-    step2 = SLDStep(Atom("b", ()), c_single, c_single, {})
-    step3 = SLDStep(Atom("c", ()), c_leaf, c_leaf, {})
+    step0 = ClauseResolvedStep(Atom("r", ()), c_root, c_root, {})
+    step1 = ClauseResolvedStep(Atom("a", ()), c_leaf, c_leaf, {})
+    step2 = ClauseResolvedStep(Atom("b", ()), c_single, c_single, {})
+    step3 = ClauseResolvedStep(Atom("c", ()), c_leaf, c_leaf, {})
     children = _build_step_tree((step0, step1, step2, step3))
     assert children == [[1, 2], [], [3], []]
 
@@ -287,7 +287,7 @@ def test_step_tree_binary_root() -> None:
 def test_step_tree_raises_on_incomplete_history() -> None:
     # Root expects 1 child but no step follows.
     c = Clause("r", Atom("r", ()), (Atom("q", ()),))
-    step0 = SLDStep(Atom("r", ()), c, c, {})
+    step0 = ClauseResolvedStep(Atom("r", ()), c, c, {})
     with pytest.raises(RenderError, match="unresolved"):
         _build_step_tree((step0,))
 
@@ -717,7 +717,7 @@ def test_render_error_unsaturated_meta() -> None:
     """Unsaturated substitution: ?Q -> ?X_1 but ?X_1 has no ground binding."""
     c_human = Clause("human", Atom("human", (Var("X"),)))
     c_human_renamed = Clause("human", Atom("human", (Meta("?X_1"),)))
-    step = SLDStep(
+    step = ClauseResolvedStep(
         goal_resolved=Atom("human", (Meta("?Q"),)),
         clause_used=c_human,
         clause_renamed=c_human_renamed,

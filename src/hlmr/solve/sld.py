@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import cast
 
+from hlmr.dispatch import RouteTarget
 from hlmr.ir.formula import Atom, Equals, Func, Meta, Term, Var
 from hlmr.ir.kb import Clause, KnowledgeBase
 from hlmr.unify.substitution import Substitution, apply_to_formula
@@ -27,8 +28,8 @@ class FreshNameGen:
 
 
 @dataclass(frozen=True)
-class SLDStep:
-    """One resolution step in an SLD derivation."""
+class ClauseResolvedStep:
+    """An SLD step resolved by unifying the goal with a KB clause (M1 shape, renamed)."""
 
     goal_resolved: Atom | Equals          # goal after applying accumulated subst
     clause_used: Clause                   # clause as it appears in the KB
@@ -37,12 +38,33 @@ class SLDStep:
 
 
 @dataclass(frozen=True)
+class DispatcherResolvedStep:
+    """An SLD step resolved by the M2 dispatcher (arithmetic/solver path).
+
+    Added in M2 — the dispatcher session populates these; M1 paths only
+    ever produce ClauseResolvedStep.
+    """
+
+    goal_resolved: Atom | Equals          # post-substitution; may still contain metas
+    ground_atom: Atom | Equals            # post-binding, fully ground arithEval target
+    route: RouteTarget                    # Z3 or SYMPY (never KB or REJECTED)
+    binding_added: Substitution = field(hash=False)  # what the solver added to subst
+    solver_summary: str = ""              # for logging; not load-bearing
+
+
+# Discriminated union of all SLD step variants.
+# M1 callers construct only ClauseResolvedStep; M2 adds DispatcherResolvedStep.
+# Pattern-match on the variant to dispatch; do not use isinstance chains.
+SLDStep = ClauseResolvedStep | DispatcherResolvedStep
+
+
+@dataclass(frozen=True)
 class SLDState:
     """Current point in SLD resolution: remaining goals + accumulated substitution."""
 
     goals: tuple[Atom | Equals, ...]
     subst: Substitution = field(hash=False)
-    history: tuple[SLDStep, ...]
+    history: tuple[ClauseResolvedStep | DispatcherResolvedStep, ...]
 
 
 # ---------------------------------------------------------------------------
@@ -174,7 +196,7 @@ def resolve(
         return None
 
     new_goals = renamed.body + state.goals[1:]
-    step = SLDStep(
+    step = ClauseResolvedStep(
         goal_resolved=goal_applied,
         clause_used=clause,
         clause_renamed=renamed,

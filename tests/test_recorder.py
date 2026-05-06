@@ -13,7 +13,7 @@ from hlmr.ir.kb import Clause
 from hlmr.ir.proof import Proof, ProofLine
 from hlmr.ir.serialise import _formula_from_dict, _term_from_dict
 from hlmr.log import SessionRecorder
-from hlmr.solve.sld import SLDState, SLDStep
+from hlmr.solve.sld import ClauseResolvedStep, SLDState, SLDStep
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -48,7 +48,7 @@ _MORTAL_RENAMED = Clause(
 
 # After one resolution step: {?X_1: socrates}, goal = human(socrates)
 _SUBST_1: dict[str, Const] = {"?X_1": SOCRATES}
-_STEP_1 = SLDStep(
+_STEP_1 = ClauseResolvedStep(
     goal_resolved=_QUERY,
     clause_used=_MORTAL_X,
     clause_renamed=_MORTAL_RENAMED,
