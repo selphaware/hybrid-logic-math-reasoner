@@ -1,13 +1,12 @@
 """dispatch/ — public API surface for the M2 dispatcher.
 
-This module exports the outcome ADT, classification types, and RouteTarget.
-The Dispatcher class (route.py) and classify() function (classify.py) are
-imported by callers that need the full implementation; this __init__ provides
-the shared type definitions.
+This module exports the outcome ADT, classification types, RouteTarget,
+and (from route.py) the Dispatcher class and exception types.
 
-Session 4a adds: OutsideFragmentReason, the six outcome dataclasses,
-DispatchOutcome, ClassifyDecision, DispatchResult.
-Session 4b adds: Dispatcher, SolverKernelDisagreement, DispatchError.
+Session 4a: OutsideFragmentReason, the six outcome dataclasses,
+            DispatchOutcome, ClassifyDecision, DispatchResult.
+Session 4b: Dispatcher, SolverKernelDisagreement, DispatchError
+            (re-exported from route.py; imported lazily to avoid cycles).
 """
 
 from __future__ import annotations
@@ -202,19 +201,33 @@ class DispatchResult:
 
 
 # ---------------------------------------------------------------------------
+# Re-export Dispatcher, DispatchError, SolverKernelDisagreement from route.py.
+# This import is deferred to avoid the circular route.py → dispatch/__init__.py
+# → route.py chain. Use TYPE_CHECKING for type annotations; for runtime use,
+# callers import directly from hlmr.dispatch.route.
+# ---------------------------------------------------------------------------
+
+if TYPE_CHECKING:
+    from hlmr.dispatch.route import DispatchError, Dispatcher, SolverKernelDisagreement
+
+
+# ---------------------------------------------------------------------------
 # Public exports
 # ---------------------------------------------------------------------------
 
 __all__ = [
     "ClassifyDecision",
+    "DispatchError",
     "DispatchOutcome",
     "DispatchResult",
+    "Dispatcher",
     "InfinitelyManySolutions",
     "MultipleSolutions",
     "NoSolution",
     "OutsideFragment",
     "OutsideFragmentReason",
     "RouteTarget",
+    "SolverKernelDisagreement",
     "Underdetermined",
     "UniqueSolution",
 ]

@@ -14,6 +14,7 @@ from hlmr.solve.sld import SLDState
 from hlmr.unify.substitution import Substitution
 
 LOG_VERSION = 1
+LOG_VERSION_V2 = 2
 
 
 # ---------------------------------------------------------------------------
@@ -34,17 +35,28 @@ def _subst_to_dict(s: Substitution) -> dict:
 
 
 def _sld_state_to_dict(state: SLDState) -> dict:
-    return {
-        "goals": [_formula_to_dict(g) for g in state.goals],
-        "subst": _subst_to_dict(state.subst),
-        "history": [
-            {
+    from hlmr.solve.sld import ClauseResolvedStep, DispatcherResolvedStep
+
+    def _step_to_dict(step) -> dict:
+        if isinstance(step, ClauseResolvedStep):
+            return {
+                "kind": "clause",
                 "goal_resolved": _formula_to_dict(step.goal_resolved),
                 "clause_name": step.clause_used.name,
                 "unifier": _subst_to_dict(step.unifier),
             }
-            for step in state.history
-        ],
+        # DispatcherResolvedStep
+        return {
+            "kind": "dispatcher",
+            "goal_resolved": _formula_to_dict(step.goal_resolved),
+            "route": step.route.value,
+            "solver_summary": step.solver_summary,
+        }
+
+    return {
+        "goals": [_formula_to_dict(g) for g in state.goals],
+        "subst": _subst_to_dict(state.subst),
+        "history": [_step_to_dict(step) for step in state.history],
     }
 
 
@@ -172,6 +184,20 @@ class SessionRecorder:
             self._write_line(record)
         except Exception as e:
             self._log_error(e)
+
+    def _write_v2_event(self, event_type: str, payload: dict) -> None:
+        """Write a v2-schema event (DISPATCH_DESIGN.md §10)."""
+        if not self._enabled:
+            return
+        assert self._file is not None
+        record = {
+            "hlmr_log_version": LOG_VERSION_V2,
+            "timestamp": datetime.now(UTC).isoformat(),
+            "event": event_type,
+            "session_id": self._session_id,
+        }
+        record.update(payload)
+        self._write_line(record)
 
     def close(self) -> None:
         """Flush and close the log file. Idempotent."""
