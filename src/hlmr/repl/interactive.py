@@ -8,6 +8,8 @@ from typing import IO
 from prompt_toolkit import PromptSession
 from prompt_toolkit.output import DummyOutput
 
+from hlmr.dispatch import MultipleSolutions, NoSolution, OutsideFragment, RouteTarget, Underdetermined, UniqueSolution
+from hlmr.dispatch.route import Dispatcher, DispatchResult
 from hlmr.ir.formula import Atom, Equals, Func, Meta, Term, Var
 from hlmr.ir.formula import Const
 from hlmr.ir.kb import Clause, KnowledgeBase
@@ -18,10 +20,11 @@ from hlmr.kernel.errors import Verified
 from hlmr.log import SessionRecorder
 from hlmr.parse import ParseError, parse_file
 from hlmr.repl.commands import Command, CommandError, parse_command
+from hlmr.repl.outcome_format import format_classify_decision, format_outcome, format_substitution
 from hlmr.solve import _is_ground, _query_meta_names
 from hlmr.solve.render import RenderError, _saturate, render
-from hlmr.solve.sld import FreshNameGen, SLDState, candidates, resolve
-from hlmr.unify.substitution import Substitution, apply_to_formula, apply_to_term
+from hlmr.solve.sld import DispatcherResolvedStep, FreshNameGen, SLDState, candidates, resolve
+from hlmr.unify.substitution import Substitution, apply_to_formula, apply_to_term, compose
 
 # ---------------------------------------------------------------------------
 # Mutable REPL state
@@ -34,6 +37,7 @@ class _ReplState:
         self.last_proof: Proof | None = None
         self.last_subst: Substitution | None = None
         self.in_query_mode: bool = False
+        self.dispatcher: Dispatcher | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -85,6 +89,7 @@ Commands:
   :show kb           display the knowledge base
   :show last         display last proof in Fitch style
   :export <path>     save last proof to JSON
+  :solver            show most recent dispatcher activity (M2)
   :quit              exit
   :query             switch to query mode
   :edit              switch back to KB mode
@@ -92,10 +97,13 @@ Commands:
 In KB mode, any line ending in '.' is a clause to add.
 In query mode:
   ?- goal.           start a new query
-  pick N  or  N      choose candidate clause N
+  pick N  or  N      choose candidate clause N (KB goals only)
   candidates         re-display candidates
-  back               undo last pick
-  abort              cancel current query"""
+  back               undo last KB pick
+  abort              cancel current query
+
+M2 arithmetic goals (plus, minus, times, divides, root_of) are
+dispatched automatically to Z3/SymPy — no pick required."""
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +122,33 @@ def _show_candidates(sld_state: SLDState, cs: list[Clause], stdout: IO) -> None:
         print(f"  {i}. {_fmt_clause(c)}  ({kind}, {c.name})", file=stdout)
 
 
+def _solver_picker_interactive(
+    outcome: MultipleSolutions,
+    session: PromptSession,
+    stdout: IO,
+) -> int | None:
+    """Prompt the user to pick one solution from a MultipleSolutions outcome."""
+    print("\nMultiple solutions found. Pick one:", file=stdout)
+    for i, sol in enumerate(outcome.solutions):
+        print(f"  [{i}] {format_substitution(sol)}", file=stdout)
+    while True:
+        try:
+            raw = session.prompt("choice: ")
+        except (EOFError, KeyboardInterrupt):
+            return None
+        stripped = raw.strip()
+        if not stripped:
+            print("  Aborted.", file=stdout)
+            return None
+        if stripped.isdigit():
+            idx = int(stripped)
+            if 0 <= idx < len(outcome.solutions):
+                return idx
+            print(f"  Choose 0–{len(outcome.solutions) - 1}.", file=stdout)
+        else:
+            print("  Enter a number or press Enter to abort.", file=stdout)
+
+
 def _run_query_loop(
     goal: Atom | Equals,
     repl_state: _ReplState,
@@ -121,15 +156,102 @@ def _run_query_loop(
     recorder: SessionRecorder,
     stdout: IO,
 ) -> None:
-    """Execute one manual SLD query.  Updates repl_state.last_proof on success."""
+    """Execute one manual SLD query.  Updates repl_state.last_proof on success.
+
+    M2 extension: arithmetic goals (Z3/SYMPY/REJECTED) are dispatched
+    automatically when a Dispatcher is available. KB goals use the manual
+    pick loop as before. 'back' only undoes KB picks.
+    """
     kb = repl_state.kb
+    dispatcher = repl_state.dispatcher
     gen = FreshNameGen()
     sld = SLDState(goals=(goal,), subst={}, history=())
-    stack: list[SLDState] = []  # for 'back'
+    stack: list[SLDState] = []  # for 'back' (KB steps only)
 
     recorder.query_start(goal)
 
     while sld.goals:
+        current = sld.goals[0]
+
+        # M2: classify current goal if dispatcher is available.
+        # Auto-dispatch Z3/SYMPY goals. For REJECTED goals: dispatch only if
+        # the rejection has a meaningful arithmetic reason (TRANSCENDENTAL,
+        # CONTESTED_CONVENTION, NON_LINEAR_BEYOND_SYMPY) — these produce
+        # informative OutsideFragment messages. UNRECOGNISED_SHAPE rejections
+        # fall through to the KB path so users see "No matching clauses" for
+        # predicates that are simply not in the KB (preserves M1 UX).
+        if dispatcher is not None:
+            from hlmr.dispatch import OutsideFragmentReason
+            decision = dispatcher.classify(current, sld.subst)
+            _meaningful_rejection = (
+                decision.target == RouteTarget.REJECTED
+                and decision.reason
+                in (
+                    OutsideFragmentReason.TRANSCENDENTAL,
+                    OutsideFragmentReason.CONTESTED_CONVENTION,
+                    OutsideFragmentReason.NON_LINEAR_BEYOND_SYMPY,
+                )
+            )
+            if decision.target in (RouteTarget.Z3, RouteTarget.SYMPY) or _meaningful_rejection:
+                # Arithmetic goal — dispatch immediately, no user pick.
+                applied = apply_to_formula(sld.subst, current)
+                assert isinstance(applied, (Atom, Equals))
+                print(f"\nDispatching: {_fmt_literal(applied)} ({decision.target.value})", file=stdout)
+                result = dispatcher.dispatch(current, sld.subst)
+
+                if isinstance(result.outcome, (OutsideFragment,)):
+                    print(
+                        f"\nQuery rejected: {format_outcome(result.outcome)}",
+                        file=stdout,
+                    )
+                    recorder.query_end("abort")
+                    return
+
+                if isinstance(result.outcome, NoSolution):
+                    print("\nNo solution for this arithmetic goal.", file=stdout)
+                    recorder.query_end("no_candidates")
+                    return
+
+                if isinstance(result.outcome, Underdetermined):
+                    partial = _saturate(result.outcome.partial_binding)
+                    print(
+                        f"\nQuery underdetermined: {format_outcome(result.outcome)}",
+                        file=stdout,
+                    )
+                    recorder.query_end("no_candidates")
+                    return
+
+                if isinstance(result.outcome, MultipleSolutions):
+                    chosen = _solver_picker_interactive(result.outcome, session, stdout)
+                    if chosen is None:
+                        recorder.query_end("abort")
+                        return
+                    binding = result.outcome.solutions[chosen]
+                    step = result.outcome.steps[chosen]
+                elif isinstance(result.outcome, UniqueSolution):
+                    binding = result.outcome.binding
+                    step = result.step
+                    if step is None:
+                        # Shouldn't happen for UniqueSolution, but be safe.
+                        print("\nInternal: missing step for UniqueSolution.", file=stdout)
+                        recorder.query_end("abort")
+                        return
+                else:
+                    # InfinitelyManySolutions or unknown — treat as underdetermined.
+                    print(f"\n{format_outcome(result.outcome)}", file=stdout)
+                    recorder.query_end("no_candidates")
+                    return
+
+                # Advance the SLD state with the dispatcher step.
+                new_subst = compose(sld.subst, binding)
+                sld = SLDState(
+                    goals=sld.goals[1:],
+                    subst=new_subst,
+                    history=sld.history + (step,),
+                )
+                continue  # next goal
+
+        # KB goal (or no dispatcher) — manual pick.
         cs = candidates(sld, kb)
         if not cs:
             print("\nNo matching clauses for current goal.", file=stdout)
@@ -192,8 +314,10 @@ def _run_query_loop(
     _sat_pre = _saturate(sld.subst)
     _qmetas = _query_meta_names(goal)
     if any(not _is_ground(apply_to_term(_sat_pre, Meta(n))) for n in _qmetas):
+        sat_str = format_substitution(_sat_pre)
         print(
-            "\nGoal resolved but no ground witness — query is underdetermined.",
+            f"\nQuery underdetermined: substitution found but no ground witness.\n"
+            f"Bindings: {sat_str}",
             file=stdout,
         )
         recorder.query_end("no_candidates")
@@ -241,6 +365,8 @@ def _do_load(path: str, state: _ReplState, recorder: SessionRecorder, stdout: IO
     for clause in kb.clauses:
         state.kb = KnowledgeBase(state.kb.clauses + (clause,))
         recorder.kb_add(clause)
+    if state.dispatcher is not None:
+        state.dispatcher.kb = state.kb
     print(f"  Loaded {len(kb.clauses)} clause(s) from {path!r}.", file=stdout)
 
 
@@ -283,6 +409,22 @@ def _do_show_last(state: _ReplState, stdout: IO) -> None:
     print(render_fitch(state.last_proof), file=stdout)
 
 
+def _do_solver(state: _ReplState, stdout: IO) -> None:
+    """Show most recent dispatcher activity (:solver command)."""
+    d = state.dispatcher
+    if d is None:
+        print("  No dispatcher active (M2 solvers not initialised).", file=stdout)
+        return
+    result = d.last_dispatch_result
+    if result is None:
+        print("  No dispatch result yet. Issue an arithmetic query first.", file=stdout)
+        return
+    print(f"  Classification: {format_classify_decision(result.decision)}", file=stdout)
+    print(f"  Outcome: {format_outcome(result.outcome)}", file=stdout)
+    if d.last_outside_fragment is not None:
+        print(f"  Outside-fragment: {format_outcome(d.last_outside_fragment)}", file=stdout)
+
+
 def _dispatch(
     cmd: Command,
     state: _ReplState,
@@ -318,6 +460,8 @@ def _dispatch(
         assert isinstance(clause, Clause)
         state.kb = KnowledgeBase(state.kb.clauses + (clause,))
         recorder.kb_add(clause)
+        if state.dispatcher is not None:
+            state.dispatcher.kb = state.kb
         print(f"  Added: {_fmt_clause(clause)}", file=stdout)
     elif cmd.type == "query":
         goal = cmd.args["goal"]
@@ -325,6 +469,8 @@ def _dispatch(
         if not state.in_query_mode:
             state.in_query_mode = True
         _run_query_loop(goal, state, session, recorder, stdout)
+    elif cmd.type == "solver":
+        _do_solver(state, stdout)
     elif cmd.type in ("pick", "candidates", "back", "abort"):
         print(f"  '{cmd.type}' is only valid during a query.", file=stdout)
     return True
@@ -363,9 +509,25 @@ def run_repl(
 
     state = _ReplState()
 
+    # Initialise M2 dispatcher with real solver bridges.
+    try:
+        from hlmr.solvers.z3_bridge import Z3Bridge
+        from hlmr.solvers.sympy_bridge import SymPyBridge
+        from hlmr.dispatch.route import Dispatcher
+        state.dispatcher = Dispatcher(
+            z3_bridge=Z3Bridge(),
+            sympy_bridge=SymPyBridge(),
+            kb=state.kb,  # kb reference; dispatcher.kb updated when KB changes
+            logger=recorder if not no_log else None,
+        )
+    except ImportError:
+        state.dispatcher = None  # z3 or sympy not installed; M1 mode only
+
     print(f"HLMR REPL — session {recorder.session_id}", file=stdout)
     if recorder.log_path:
         print(f"Logging to: {recorder.log_path}", file=stdout)
+    m2_status = "M2 arithmetic enabled" if state.dispatcher else "M2 arithmetic unavailable (z3/sympy not installed)"
+    print(f"M2: {m2_status}", file=stdout)
     print("Type ':help' for commands.", file=stdout)
 
     try:

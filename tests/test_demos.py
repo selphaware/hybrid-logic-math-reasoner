@@ -150,7 +150,10 @@ def test_peano_even_json_written() -> None:
 
 
 def test_demos_registry_has_all_four() -> None:
-    assert set(DEMOS.keys()) == {"syllogism", "kinship", "finite_puzzle", "peano_even"}
+    # M1 demos (unchanged)
+    assert {"syllogism", "kinship", "finite_puzzle", "peano_even"} <= set(DEMOS.keys())
+    # M2 demos added in Session 5c
+    assert {"prime_search", "quadratic", "linear_system", "outside_fragment"} <= set(DEMOS.keys())
 
 
 def test_demos_registry_all_callable() -> None:

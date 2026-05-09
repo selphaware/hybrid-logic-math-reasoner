@@ -164,8 +164,16 @@ def _cmd_demo(args: argparse.Namespace) -> int:
         available = ", ".join(DEMOS)
         print(f"unknown demo: {name!r}. Available: {available}", file=sys.stderr)
         return 1
-    _, proof = DEMOS[name]()
-    print(render_fitch(proof))
+    subst, proof = DEMOS[name]()
+    if proof is None:
+        # OutsideFragment demo — no proof to render.
+        print("Demo completed: query correctly rejected as OutsideFragment.")
+        print("No proof produced — honest rejection of an unsupported query shape.")
+    else:
+        if subst:
+            b_str = ", ".join(f"{k} = {v}" for k, v in sorted(subst.items()))
+            print(f"Solved: {b_str}")
+        print(render_fitch(proof))
     return 0
 
 

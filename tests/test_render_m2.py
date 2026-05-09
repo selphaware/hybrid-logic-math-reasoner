@@ -366,6 +366,31 @@ class TestEqualityRuleChoice:
         t = Func("+", (Const(2), Const(3)))
         assert _choose_equality_rule(Equals(t, t)) == "eqRefl"
 
+    def test_choose_equality_rule_cross_type_int_fraction(self):
+        """Equals(Const(7), Const(Fraction(7, 1))) — Python == treats these as
+        equal (numeric tower); _choose_equality_rule emits eqRefl; M0's eqRefl
+        rule accepts the cross-type reflexivity. Sound today; this test pins
+        the behaviour."""
+        f = Equals(Const(7), Const(Fraction(7, 1)))
+        rule = _choose_equality_rule(f)
+        assert rule == "eqRefl"
+
+        # Verify M0's eqRefl rule actually accepts this — build a one-line proof.
+        proof = Proof(lines=(
+            ProofLine(
+                number=1,
+                formula=f,
+                justification=RuleApp("eqRefl", (), (), {}),
+                box_depth=0,
+            ),
+        ))
+        result = check_proof(proof)
+        assert isinstance(result, Verified), (
+            f"M0 eqRefl rejected cross-type Const(7) == Const(Fraction(7, 1)); "
+            f"the policy in _choose_equality_rule needs adjustment. "
+            f"Got: {result!r}"
+        )
+
 
 # ---------------------------------------------------------------------------
 # E. Soundness backstops — malicious renderer scenarios

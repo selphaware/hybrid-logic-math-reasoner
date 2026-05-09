@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "Equals",
+    "lhs": {
+      "_type": "Func",
+      "name": "+",
+      "args": [
+        {
+          "_type": "Func",
+          "name": "-",
+          "args": [
+            {
+              "_type": "Func",
+              "name": "^",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": 2
+                },
+                {
+                  "_type": "Const",
+                  "value": 2
+                }
+              ]
+            },
+            {
+              "_type": "Func",
+              "name": "*",
+              "args": [
+                {
+                  "_type": "Const",
+                  "value": 5
+                },
+                {
+                  "_type": "Const",
+                  "value": 2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "_type": "Const",
+          "value": 6
+        }
+      ]
+    },
+    "rhs": {
+      "_type": "Const",
+      "value": 0
+    }
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "Equals",
+        "lhs": {
+          "_type": "Func",
+          "name": "+",
+          "args": [
+            {
+              "_type": "Func",
+              "name": "-",
+              "args": [
+                {
+                  "_type": "Func",
+                  "name": "^",
+                  "args": [
+                    {
+                      "_type": "Const",
+                      "value": 2
+                    },
+                    {
+                      "_type": "Const",
+                      "value": 2
+                    }
+                  ]
+                },
+                {
+                  "_type": "Func",
+                  "name": "*",
+                  "args": [
+                    {
+                      "_type": "Const",
+                      "value": 5
+                    },
+                    {
+                      "_type": "Const",
+                      "value": 2
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "_type": "Const",
+              "value": 6
+            }
+          ]
+        },
+        "rhs": {
+          "_type": "Const",
+          "value": 0
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "arithEval",
+        "line_refs": [],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    }
+  ]
+}

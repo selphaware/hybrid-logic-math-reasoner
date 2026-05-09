@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "goal": {
+    "_type": "And",
+    "left": {
+      "_type": "Equals",
+      "lhs": {
+        "_type": "Const",
+        "value": 2
+      },
+      "rhs": {
+        "_type": "Const",
+        "value": 2
+      }
+    },
+    "right": {
+      "_type": "Equals",
+      "lhs": {
+        "_type": "Func",
+        "name": "+",
+        "args": [
+          {
+            "_type": "Const",
+            "value": 2
+          },
+          {
+            "_type": "Const",
+            "value": 8
+          }
+        ]
+      },
+      "rhs": {
+        "_type": "Const",
+        "value": 10
+      }
+    }
+  },
+  "lines": [
+    {
+      "number": 1,
+      "formula": {
+        "_type": "Equals",
+        "lhs": {
+          "_type": "Const",
+          "value": 2
+        },
+        "rhs": {
+          "_type": "Const",
+          "value": 2
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "eqRefl",
+        "line_refs": [],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 2,
+      "formula": {
+        "_type": "Equals",
+        "lhs": {
+          "_type": "Func",
+          "name": "+",
+          "args": [
+            {
+              "_type": "Const",
+              "value": 2
+            },
+            {
+              "_type": "Const",
+              "value": 8
+            }
+          ]
+        },
+        "rhs": {
+          "_type": "Const",
+          "value": 10
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "arithEval",
+        "line_refs": [],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    },
+    {
+      "number": 3,
+      "formula": {
+        "_type": "And",
+        "left": {
+          "_type": "Equals",
+          "lhs": {
+            "_type": "Const",
+            "value": 2
+          },
+          "rhs": {
+            "_type": "Const",
+            "value": 2
+          }
+        },
+        "right": {
+          "_type": "Equals",
+          "lhs": {
+            "_type": "Func",
+            "name": "+",
+            "args": [
+              {
+                "_type": "Const",
+                "value": 2
+              },
+              {
+                "_type": "Const",
+                "value": 8
+              }
+            ]
+          },
+          "rhs": {
+            "_type": "Const",
+            "value": 10
+          }
+        }
+      },
+      "justification": {
+        "_type": "RuleApp",
+        "rule": "andI",
+        "line_refs": [
+          1,
+          2
+        ],
+        "box_refs": [],
+        "extra": {}
+      },
+      "box_depth": 0
+    }
+  ]
+}

@@ -110,15 +110,94 @@ implementation detail.
   and `proofs/m1/HARDENING_FINDINGS.md` for property-test findings.
 - Regenerate the corpus: `python -m hlmr regenerate-corpus`
 
-**Milestone 2** — arithmetic and dispatch (in progress):
-- Spec frozen at `prd_milestone_2.md` (Draft v2, post Opus consistency review)
-- Three Opus 4.7 design docs approved and in place:
-  - `src/hlmr/kernel/ARITH_EVAL_DESIGN.md` — the new `arithEval` kernel rule
-  - `src/hlmr/dispatch/DISPATCH_DESIGN.md` — constraint classifier and router
-  - `src/hlmr/solve/RENDER_M2_DESIGN.md` — renderer extension for arithmetic witnesses
-- Implementation (Sonnet 4.6) has not yet started. The kernel rule, the
-  Z3 and SymPy bridges, the dispatcher, and the renderer extension are
-  the next deliverables.
+**Milestone 2** — arithmetic and dispatch (**shipped**):
+- `arithEval` — 23rd kernel rule; verifies ground arithmetic atoms by exact
+  evaluation (no floating-point; Python `int` + `fractions.Fraction` only)
+- Z3 bridge — linear arithmetic over ℤ/ℚ, finite-domain constraints,
+  inequality solving; verify-before-return prevents unsound witnesses
+- SymPy bridge — symbolic polynomial root-finding via `solveset` on ℝ;
+  multi-root `MultipleSolutions` with contested-convention (0^0) rejection
+- Dispatcher — classifies goals (KB / Z3 / SymPy / OutsideFragment),
+  routes per goal, produces `DispatcherResolvedStep` for the renderer
+- Renderer extension — `arithEval` / `eqRefl` lines, multi-goal andI-chain,
+  depth-0 invariant; full Fitch proofs for mixed KB+arithmetic queries
+- REPL extended — arithmetic goals auto-dispatch; `:solver` command;
+  `MultipleSolutions` interactive picker; `OutsideFragment` rejection messages
+- Four M2 demos: `prime_search`, `quadratic`, `linear_system`, `outside_fragment`
+
+---
+
+## M2 — arithmetic queries
+
+### Installation
+
+M2 adds two runtime dependencies (already in `pyproject.toml`):
+
+```powershell
+pip install -e ".[test]"   # installs z3-solver and sympy
+```
+
+### Running the M2 demos
+
+```powershell
+# §2 prime example: KB prime facts + Z3 inequalities → ?P = 5
+python -m hlmr demo prime_search
+
+# Quadratic: SymPy root-finding → ?X = 2 (one of {2, 3})
+python -m hlmr demo quadratic
+
+# Linear system: Z3 → ?X = 2, ?Y = 8
+python -m hlmr demo linear_system
+
+# Honest rejection: transcendental outside the M2 fragment
+python -m hlmr demo outside_fragment
+```
+
+Proof JSON artifacts land in `proofs/m2/`.
+
+### Using the M2 REPL
+
+```powershell
+python -m hlmr repl
+```
+
+The REPL auto-detects arithmetic predicates (`plus`, `minus`, `times`,
+`divides`, `root_of`) and dispatches them to Z3 or SymPy automatically — no
+manual pick required for those goals. KB predicates still use the manual
+pick loop as in M1.
+
+```
+kb> prime(2).
+kb> prime(3).
+kb> prime(5).
+kb> prime(7).
+kb> :query
+?- plus(?X, ?Y, 10).
+Dispatching: plus(?X, ?Y, 10) (z3)
+...
+?- root_of(?X, x^2-5x+6).     # parsed as func syntax
+Dispatching: root_of(?X, ...) (sympy)
+Multiple solutions found. Pick one:
+  [0] {?X = 2}
+  [1] {?X = 3}
+choice: 0
+Solved: ?X = 2
+```
+
+Use `:solver` to inspect the most recent dispatcher decision:
+
+```
+:solver
+  Classification: route=sympy
+  Outcome: UniqueSolution: {?X = 2}
+```
+
+### Architecture pointers
+
+- [`prd_milestone_2.md`](prd_milestone_2.md) — full M2 spec and §14 definition of done
+- [`src/hlmr/dispatch/DISPATCH_DESIGN.md`](src/hlmr/dispatch/DISPATCH_DESIGN.md) — Opus 4.7 design for the dispatcher: constraint classification, Z3/SymPy dispatch paths, Case 1/Case 2 solver/kernel disagreement handling
+- [`src/hlmr/kernel/ARITH_EVAL_DESIGN.md`](src/hlmr/kernel/ARITH_EVAL_DESIGN.md) — `arithEval` rule design
+- [`src/hlmr/solve/RENDER_M2_DESIGN.md`](src/hlmr/solve/RENDER_M2_DESIGN.md) — renderer extension design
 
 ---
 

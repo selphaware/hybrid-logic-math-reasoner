@@ -286,6 +286,9 @@ class Dispatcher:
     last_outside_fragment: OutsideFragment | None = field(
         default=None, init=False
     )
+    last_dispatch_result: DispatchResult | None = field(
+        default=None, init=False
+    )
 
     # ------------------------------------------------------------------
     # Public API
@@ -301,10 +304,10 @@ class Dispatcher:
         self, goal: Atom | Equals, subst: Substitution
     ) -> DispatchResult:
         """Classify + route + verify per DISPATCH §5.1."""
-        # Per DISPATCH_DESIGN.md §11.3 lifecycle: clear at start of every
-        # dispatch() call so a successful or NoSolution outcome doesn't leave
-        # a stale OutsideFragment from a previous call visible to the REPL.
+        # Per DISPATCH_DESIGN.md §11.3 lifecycle: clear per-call state so
+        # stale values from a previous call don't persist to the REPL.
         self.last_outside_fragment = None
+        self.last_dispatch_result = None
         g = apply_to_formula(subst, goal)
         assert isinstance(g, (Atom, Equals))
 
@@ -325,11 +328,17 @@ class Dispatcher:
                 )
                 self.last_outside_fragment = outcome
                 self._log_outcome(outcome)
-                return DispatchResult(decision=decision, outcome=outcome, step=None)
+                result = DispatchResult(decision=decision, outcome=outcome, step=None)
+                self.last_dispatch_result = result
+                return result
             case RouteTarget.Z3:
-                return self._dispatch_z3(g, decision, subst)
+                result = self._dispatch_z3(g, decision, subst)
+                self.last_dispatch_result = result
+                return result
             case RouteTarget.SYMPY:
-                return self._dispatch_sympy(g, decision, subst)
+                result = self._dispatch_sympy(g, decision, subst)
+                self.last_dispatch_result = result
+                return result
 
     # ------------------------------------------------------------------
     # Z3 dispatch path (DISPATCH §5.2)

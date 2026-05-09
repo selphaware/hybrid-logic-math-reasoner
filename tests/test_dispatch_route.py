@@ -542,6 +542,100 @@ def test_last_outside_fragment_cleared_per_call():
 
 
 # ---------------------------------------------------------------------------
+# I. Coverage uplift — logging paths and edge cases
+# ---------------------------------------------------------------------------
+
+
+def test_logging_paths_with_real_recorder(tmp_path):
+    """Dispatcher with a SessionRecorder triggers all v2 logging paths."""
+    from hlmr.log.recorder import SessionRecorder
+    recorder = SessionRecorder(enabled=True, corpus_dir=tmp_path)
+    d = Dispatcher(
+        z3_bridge=FakeZ3Bridge(next_result=Z3Sat(model={"?P": 5})),
+        sympy_bridge=FakeSymPyBridge(next_result=SymPyNoRealRoots()),
+        kb=_EMPTY_KB,
+        logger=recorder,
+    )
+    result = d.dispatch(Atom(">", (Meta("?P"), Const(2))), {})
+    assert isinstance(result.outcome, UniqueSolution)
+    recorder.close()
+    lines = (tmp_path / f"{recorder.session_id}.jsonl").read_text().splitlines()
+    # Should have v2 events: dispatch_classify, dispatch_route, solver_call,
+    # solver_result, verify_arith, dispatch_outcome
+    assert any('"event"' in line for line in lines)
+
+
+def test_logging_with_outside_fragment_and_recorder(tmp_path):
+    """OutsideFragment rejection emits v2 events when logger is present."""
+    from hlmr.log.recorder import SessionRecorder
+    recorder = SessionRecorder(enabled=True, corpus_dir=tmp_path)
+    d = Dispatcher(
+        z3_bridge=FakeZ3Bridge(next_result=Z3Unsat()),
+        sympy_bridge=FakeSymPyBridge(next_result=SymPyNoRealRoots()),
+        kb=_EMPTY_KB,
+        logger=recorder,
+    )
+    goal = Atom("root_of", (Meta("?X"), Func("^", (Const(2), Var("x")))))
+    result = d.dispatch(goal, {})
+    assert isinstance(result.outcome, OutsideFragment)
+    recorder.close()
+
+
+def test_ground_contested_z3_goal_returns_outside_fragment():
+    """A fully-ground goal containing 0^0 dispatched to Z3 returns OutsideFragment.
+
+    Since no solver is involved (ground short-circuit), the contested shape
+    produces CONTESTED_CONVENTION without a Case 1 crash.
+    """
+    d = _make_dispatcher()
+    # Equals(0^0, 1) — ground, contested, classified as Z3 (Equals of arithmetic).
+    zero_pow_zero = Func("^", (Const(0), Const(0)))
+    goal = Equals(zero_pow_zero, Const(1))
+    result = d.dispatch(goal, {})
+    assert isinstance(result.outcome, OutsideFragment)
+    assert result.outcome.classification == OutsideFragmentReason.CONTESTED_CONVENTION
+
+
+def test_last_dispatch_result_set_on_unique_solution():
+    """last_dispatch_result is set after a successful Z3 dispatch."""
+    d = _make_dispatcher(z3_result=Z3Sat(model={"?P": 5}))
+    goal = Atom(">", (Meta("?P"), Const(2)))
+    d.dispatch(goal, {})
+    assert d.last_dispatch_result is not None
+    assert isinstance(d.last_dispatch_result.outcome, UniqueSolution)
+
+
+def test_last_dispatch_result_cleared_per_call():
+    """last_dispatch_result is None at the start of each dispatch()."""
+    d = _make_dispatcher(z3_result=Z3Sat(model={"?P": 5}))
+    d.dispatch(Atom(">", (Meta("?P"), Const(2))), {})
+    assert d.last_dispatch_result is not None
+    # Reset mock to NoSolution and fire again.
+    d.z3_bridge.next_result = Z3Unsat()
+    d.dispatch(Atom(">", (Meta("?Q"), Const(0))), {})
+    assert isinstance(d.last_dispatch_result.outcome, NoSolution)
+
+
+def test_logging_sympy_path_with_recorder(tmp_path):
+    """SymPy dispatch path emits v2 logging events."""
+    from hlmr.log.recorder import SessionRecorder
+    recorder = SessionRecorder(enabled=True, corpus_dir=tmp_path)
+    poly = Func("-", (Var("x"), Const(3)))
+    d = Dispatcher(
+        z3_bridge=FakeZ3Bridge(next_result=Z3Unsat()),
+        sympy_bridge=FakeSymPyBridge(next_result=SymPyFiniteRoots(roots=(3,))),
+        kb=_EMPTY_KB,
+        logger=recorder,
+    )
+    goal = Atom("root_of", (Meta("?X"), poly))
+    result = d.dispatch(goal, {})
+    assert isinstance(result.outcome, UniqueSolution)
+    recorder.close()
+    lines = (tmp_path / f"{recorder.session_id}.jsonl").read_text().splitlines()
+    assert any('"event"' in line for line in lines)
+
+
+# ---------------------------------------------------------------------------
 # H. §11.6 soundness backstop
 # ---------------------------------------------------------------------------
 

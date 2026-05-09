@@ -16,7 +16,7 @@ class Command:
 
     type is one of: 'noop', 'help', 'load', 'save', 'show_kb', 'show_last',
     'export', 'quit', 'query_mode', 'edit_mode', 'clause', 'query',
-    'pick', 'candidates', 'back', 'abort'.
+    'pick', 'candidates', 'back', 'abort', 'solver'.
     """
 
     type: str
@@ -71,11 +71,17 @@ def _parse_meta(rest: str) -> Command:
     verb = parts[0].lower()
     arg = parts[1] if len(parts) > 1 else None
 
-    _no_arg = {"help", "quit", "query", "edit"}
+    _no_arg = {"help", "quit", "query", "edit", "solver"}
     if verb in _no_arg:
         if arg is not None:
             raise CommandError(f":{verb} takes no arguments")
-        _map = {"help": "help", "quit": "quit", "query": "query_mode", "edit": "edit_mode"}
+        _map = {
+            "help": "help",
+            "quit": "quit",
+            "query": "query_mode",
+            "edit": "edit_mode",
+            "solver": "solver",
+        }
         return Command(_map[verb], {})
 
     if verb == "load":

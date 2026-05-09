@@ -163,9 +163,13 @@ blockers for M2's definition of done.
    System returns `?X ∈ {2, 3}` with each witness kernel-verified by
    substitution. The user picks one or both via the REPL; the proof
    for each chosen witness is rendered.
-3. **Linear system.** Z3 demo: `?- plus(?X, ?Y, 10), greater_than(?X, 0),
-   less_than(?X, ?Y).` System returns one valid solution; user can
-   request more solutions until `unsat`.
+3. **Linear system.** Z3 demo (goal-by-goal-determinate form):
+   `?- ?X = 2, plus(?X, ?Y, 10).` System returns `?X = 2, ?Y = 8`
+   with a kernel-verified proof. The original underdetermined form
+   `?- plus(?X, ?Y, 10), greater_than(?X, 0), less_than(?X, ?Y).`
+   requires constraint-propagation search beyond M2's goal-by-goal
+   scope; see `src/hlmr/solve/RENDER_M2_DESIGN.md` §6.3 for the
+   analysis.
 4. **`OutsideFragment` rejection.** Query like
    `?- root_of(?X, 2^x + x^2 - 5).` System detects the transcendental
    equation, reports `OutsideFragment` with a clear message, does

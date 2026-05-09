@@ -33,6 +33,7 @@ from hlmr.ir.kb import Clause, KnowledgeBase
 from hlmr.solve import manual_solve
 from hlmr.solvers import (
     SymPyConditionSet,
+    SymPyError,
     SymPyFiniteRoots,
     SymPyNoRealRoots,
     Z3Result,
@@ -492,3 +493,202 @@ class TestSoundnessBackstop:
         goal = Atom("root_of", (Meta("?X"), poly))
         with pytest.raises(SolverKernelDisagreement):
             d.dispatch(goal, {})
+
+
+# ---------------------------------------------------------------------------
+# E. Z3Bridge translation error paths (coverage uplift for §14.3)
+# ---------------------------------------------------------------------------
+
+
+class TestZ3BridgeTranslationErrors:
+    def test_string_const_raises(self):
+        """Const('alice') is not arithmetic — Z3 bridge must reject it."""
+        from hlmr.solvers.z3_bridge import Z3TranslationError
+        b = Z3Bridge()
+        with pytest.raises(Z3TranslationError):
+            b.check((Atom(">", (Const("alice"), Const(0))),), timeout_ms=1000)
+
+    def test_unrecognised_atom_raises(self):
+        """An atom with an unrecognised predicate (e.g. 'foo') raises."""
+        from hlmr.solvers.z3_bridge import Z3TranslationError
+        b = Z3Bridge()
+        with pytest.raises(Z3TranslationError):
+            b.check((Atom("foo", (Const(1), Const(2))),), timeout_ms=1000)
+
+    def test_transcendental_power_raises(self):
+        """Func('^', (Var, Var)) — variable exponent — raises translation error."""
+        from hlmr.solvers.z3_bridge import Z3TranslationError
+        b = Z3Bridge()
+        # Variable in exponent position — transcendental.
+        with pytest.raises(Z3TranslationError):
+            b.check(
+                (Atom(">", (Func("^", (Const(2), Meta("?X"))), Const(0))),),
+                timeout_ms=1000,
+            )
+
+    def test_ternary_minus_z3_sat(self):
+        """Atom('minus', (a, b, c)) → Z3 constraint a - b == c."""
+        b = Z3Bridge()
+        result = b.check(
+            (Atom("minus", (Meta("?A"), Const(3), Const(7))),),
+            timeout_ms=5000,
+        )
+        assert isinstance(result, Z3Sat)
+        assert result.model.get("?A") == 10
+
+    def test_ternary_times_z3_sat(self):
+        """Atom('times', (a, b, c)) → Z3 constraint a * b == c."""
+        b = Z3Bridge()
+        result = b.check(
+            (Atom("times", (Meta("?A"), Const(3), Const(15))),),
+            timeout_ms=5000,
+        )
+        assert isinstance(result, Z3Sat)
+        assert result.model.get("?A") == 5
+
+    def test_ternary_divides_z3_sat(self):
+        """Atom('divides', (a, b, c)) → Z3 constraint a / b == c."""
+        b = Z3Bridge()
+        result = b.check(
+            (Atom("divides", (Const(10), Const(2), Meta("?C"))),),
+            timeout_ms=5000,
+        )
+        assert isinstance(result, Z3Sat)
+        assert result.model.get("?C") == 5
+
+    def test_lte_gte_predicates(self):
+        """Atom('<=', ...) and Atom('>=', ...) translate correctly."""
+        b = Z3Bridge()
+        r1 = b.check((Atom("<=", (Const(3), Const(5))),), timeout_ms=5000)
+        assert isinstance(r1, Z3Sat)
+        r2 = b.check((Atom(">=", (Const(5), Const(3))),), timeout_ms=5000)
+        assert isinstance(r2, Z3Sat)
+
+    def test_unary_negation_term(self):
+        """Func('-', (a,)) — unary negation — translates correctly."""
+        b = Z3Bridge()
+        neg_meta = Func("-", (Meta("?X"),))
+        result = b.check(
+            (Atom(">", (neg_meta, Const(-10))),),
+            timeout_ms=5000,
+        )
+        assert isinstance(result, Z3Sat)
+
+    def test_division_term(self):
+        """Func('/', (a, b)) — division — translates correctly."""
+        b = Z3Bridge()
+        half = Func("/", (Const(1), Const(2)))
+        result = b.check(
+            (Atom(">", (half, Const(0))),),
+            timeout_ms=5000,
+        )
+        assert isinstance(result, Z3Sat)
+
+
+# ---------------------------------------------------------------------------
+# F. SymPyBridge translation error paths (coverage uplift for §14.3)
+# ---------------------------------------------------------------------------
+
+
+class TestSymPyBridgeTranslationErrors:
+    def test_non_root_of_non_equals_raises_sympy_error(self):
+        """Arithmetic atom (not root_of/Equals) reaching SymPy → SymPyError."""
+        b = SymPyBridge()
+        result = b.solveset(Atom(">", (Meta("?X"), Const(2))))
+        assert isinstance(result, SymPyError)
+
+    def test_constant_polynomial_no_var(self):
+        """Polynomial with no free symbols (constant) → FiniteRoots(())."""
+        b = SymPyBridge()
+        result = b.solveset(Atom("root_of", (Meta("?X"), Const(5))))
+        assert isinstance(result, SymPyFiniteRoots)
+        assert result.roots == ()
+
+    def test_string_const_sympy_error(self):
+        """Const('abc') in polynomial → SymPyError."""
+        b = SymPyBridge()
+        result = b.solveset(Atom("root_of", (Meta("?X"), Const("abc"))))
+        assert isinstance(result, SymPyError)
+
+    def test_equals_no_free_symbols_equal(self):
+        """Equals(2, 2) — no variable — FiniteRoots(()) (trivially true)."""
+        b = SymPyBridge()
+        result = b.solveset(Equals(Const(2), Const(2)))
+        assert isinstance(result, SymPyFiniteRoots)
+        assert result.roots == ()
+
+    def test_equals_no_free_symbols_unequal(self):
+        """Equals(2, 3) — no variable, false — NoRealRoots."""
+        b = SymPyBridge()
+        result = b.solveset(Equals(Const(2), Const(3)))
+        assert isinstance(result, SymPyNoRealRoots)
+
+    def test_fraction_const_in_polynomial(self):
+        """Fraction coefficients translate correctly via sympy.Rational."""
+        b = SymPyBridge()
+        # 2x - 1/2 = 0 → x = 1/4
+        poly = Func("-", (Func("*", (Const(2), Var("x"))), Const(Fraction(1, 2))))
+        result = b.solveset(Atom("root_of", (Meta("?X"), poly)))
+        assert isinstance(result, SymPyFiniteRoots)
+        assert len(result.roots) == 1
+        assert result.roots[0] == Fraction(1, 4)
+
+    def test_unary_negation_term(self):
+        """Func('-', (Var('x'),)) — unary negation in polynomial."""
+        b = SymPyBridge()
+        # -x + 3 = 0 → x = 3
+        poly = Func("+", (Func("-", (Var("x"),)), Const(3)))
+        result = b.solveset(Atom("root_of", (Meta("?X"), poly)))
+        assert isinstance(result, SymPyFiniteRoots)
+        assert result.roots == (3,)
+
+    def test_division_term_in_polynomial(self):
+        """Func('/', (a, b)) — division in SymPy expression."""
+        b = SymPyBridge()
+        # x/2 - 1 = 0 → x = 2
+        poly = Func("-", (Func("/", (Var("x"), Const(2))), Const(1)))
+        result = b.solveset(Atom("root_of", (Meta("?X"), poly)))
+        assert isinstance(result, SymPyFiniteRoots)
+        assert result.roots == (2,)
+
+    def test_unknown_func_name_sympy_error(self):
+        """An unrecognised Func name in the polynomial → SymPyError."""
+        b = SymPyBridge()
+        poly = Func("unknown_op", (Var("x"), Const(1)))
+        result = b.solveset(Atom("root_of", (Meta("?X"), poly)))
+        assert isinstance(result, SymPyError)
+
+    def test_multiple_free_symbols_error(self):
+        """Polynomial with >1 free symbols → SymPyError (multi-var not supported)."""
+        b = SymPyBridge()
+        # x + y (two free symbols) — should raise SymPyTranslationError
+        poly = Func("+", (Var("x"), Var("y")))
+        result = b.solveset(Atom("root_of", (Meta("?X"), poly)))
+        assert isinstance(result, SymPyError)
+
+
+# ---------------------------------------------------------------------------
+# G. solvers/__init__.py lazy re-export (coverage uplift)
+# ---------------------------------------------------------------------------
+
+
+def test_solvers_init_real_z3_bridge_import():
+    """The __getattr__ lazy re-export of RealZ3Bridge works."""
+    from hlmr import solvers
+    klass = solvers.RealZ3Bridge
+    assert klass is Z3Bridge
+
+
+def test_solvers_init_real_sympy_bridge_import():
+    """The __getattr__ lazy re-export of RealSymPyBridge works."""
+    from hlmr import solvers
+    klass = solvers.RealSymPyBridge
+    assert klass is SymPyBridge
+
+
+def test_solvers_init_unknown_attr_raises():
+    """__getattr__ raises AttributeError for unknown names."""
+    import hlmr.solvers as s
+    import pytest
+    with pytest.raises(AttributeError):
+        _ = s.NonExistentThing
