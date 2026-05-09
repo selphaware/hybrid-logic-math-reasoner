@@ -137,4 +137,21 @@ __all__ = [
     "Z3Timeout",
     "Z3Unknown",
     "Z3Unsat",
+    # Real bridge classes (z3_bridge.py / sympy_bridge.py).
+    # Imported here so callers can use `from hlmr.solvers import RealZ3Bridge`
+    # without knowing which module they come from.
+    "RealZ3Bridge",
+    "RealSymPyBridge",
 ]
+
+
+# Re-export the real bridge implementations under canonical names.
+# The actual solver imports (z3, sympy) live only in the bridge modules.
+def __getattr__(name: str):
+    if name == "RealZ3Bridge":
+        from hlmr.solvers.z3_bridge import Z3Bridge as _Z3Bridge
+        return _Z3Bridge
+    if name == "RealSymPyBridge":
+        from hlmr.solvers.sympy_bridge import SymPyBridge as _SymPyBridge
+        return _SymPyBridge
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
