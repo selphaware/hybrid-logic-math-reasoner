@@ -200,19 +200,13 @@ def manual_solve(
     if any(not _is_ground(v) for v in sat.values()):
         return (sat, None)
 
-    # Determine render path.
-    has_dispatcher_steps = any(
-        isinstance(step, DispatcherResolvedStep)
-        for step in state.history
+    # Render and kernel-verify. For multi-goal queries or M2 queries with
+    # DispatcherResolvedStep history entries, render() handles both via the
+    # M2 alphabet (arithEval / eqRefl) and the andI chain (RENDER §4.6).
+    query_for_render: Atom | Equals | tuple[Atom | Equals, ...] = (
+        original_goals if is_tuple_goal else first_goal
     )
-    if has_dispatcher_steps or is_tuple_goal:
-        # Renderer extension (M2 Task C / Session 5) not yet available.
-        # Return (sat, None) so callers that only need the substitution
-        # can proceed; callers that need a proof must wait for Session 5.
-        return (sat, None)
-
-    # KB-only single-goal path: render and kernel-verify normally.
-    proof = render(state, kb, first_goal)
+    proof = render(state, kb, query_for_render)
     if not isinstance(check_proof(proof), Verified):
         raise RenderError("rendered proof rejected by kernel — renderer bug")
     return (sat, proof)

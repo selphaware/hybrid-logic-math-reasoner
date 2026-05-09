@@ -1,8 +1,9 @@
 """Integration tests for manual_solve with the M2 dispatcher.
 
 Tests M2 mode (dispatcher provided) while preserving M1 mode parity.
-Renderer extension is not yet available (Session 5); tests verify
-SLDState shape and substitution directly rather than rendered proofs.
+Updated in Session 5b: the renderer now handles DispatcherResolvedStep and
+multi-goal queries, so tests previously expecting proof=None now assert
+kernel-verified proofs.
 """
 
 from __future__ import annotations
@@ -23,6 +24,8 @@ from hlmr.dispatch import (
 )
 from hlmr.ir.formula import Atom, Const, Equals, Func, Meta, Var
 from hlmr.ir.kb import Clause, KnowledgeBase
+from hlmr.kernel.check import check_proof
+from hlmr.kernel.errors import Verified
 from hlmr.solve import manual_solve
 from hlmr.solve.sld import ClauseResolvedStep, DispatcherResolvedStep
 from hlmr.solvers import (
@@ -113,9 +116,9 @@ def test_m1_parity_picker_abort():
     assert result is None
 
 
-def test_m1_parity_multi_goal_tuple_returns_sat_no_proof():
-    """M1 mode with tuple goals: resolution succeeds but render not yet supported
-    (multi-goal renderer is Session 5). Returns (sat, None)."""
+def test_m1_parity_multi_goal_tuple_renders():
+    """M1 mode with tuple goals: renderer now handles multi-goal (Session 5b).
+    Returns (sat, kernel-verified proof) with andI chain at the end."""
     result = manual_solve(
         _KB_PQ,
         (Atom("p", (Meta("?X"),)), Atom("q", (Meta("?Y"),))),
@@ -124,7 +127,8 @@ def test_m1_parity_multi_goal_tuple_returns_sat_no_proof():
     )
     assert result is not None
     sat, proof = result
-    assert proof is None  # multi-goal render not yet available
+    assert proof is not None
+    assert isinstance(check_proof(proof), Verified)
     assert sat.get("?X") == Const("a")
     assert sat.get("?Y") == Const("b")
 
@@ -150,7 +154,8 @@ def test_m2_mode_kb_goal_renders():
 
 
 def test_m2_mode_kb_multi_goal_sld_state():
-    """?- p(?X), q(?Y) with KB p(a). q(b). — both KB-routed, no solver calls."""
+    """?- p(?X), q(?Y) with KB p(a). q(b). — both KB-routed, no solver calls.
+    Renderer now handles multi-goal (Session 5b): returns kernel-verified proof."""
     d = _make_dispatcher(kb=_KB_PQ)
     result = manual_solve(
         _KB_PQ,
@@ -160,8 +165,8 @@ def test_m2_mode_kb_multi_goal_sld_state():
     )
     assert result is not None
     sat, proof = result
-    # Multi-goal: renderer not yet extended; proof is None
-    assert proof is None
+    assert proof is not None
+    assert isinstance(check_proof(proof), Verified)
     assert sat.get("?X") == Const("a")
     assert sat.get("?Y") == Const("b")
     # No solver calls
@@ -180,7 +185,8 @@ def test_m2_mode_mixed_goal_sld_history():
     After resolution, history has:
       [0] ClauseResolvedStep (for p(?X))
       [1] DispatcherResolvedStep (for 5 > 0)
-    manual_solve returns (sat, None) — DispatcherResolvedStep in history.
+    Renderer now handles DispatcherResolvedStep (Session 5b): returns
+    kernel-verified proof with KB premise + arithEval + andI chain.
     """
     d = _make_dispatcher(
         z3_result=Z3Sat(model={}),  # ground goal → short-circuit, no Z3 call
@@ -194,14 +200,14 @@ def test_m2_mode_mixed_goal_sld_history():
     )
     assert result is not None
     sat, proof = result
-    # Proof is None because history contains DispatcherResolvedStep
-    assert proof is None
+    assert proof is not None
+    assert isinstance(check_proof(proof), Verified)
     assert sat.get("?X") == Const(5)
 
 
 def test_m2_mode_mixed_goal_history_types():
-    """Verify the SLDState is not directly available via manual_solve return,
-    but the substitution reflects both steps (KB binding + arithmetic verify)."""
+    """Substitution reflects both steps (KB binding + arithmetic verify).
+    Renderer produces a kernel-verified proof (Session 5b)."""
     d = _make_dispatcher(kb=_KB_P5)
     result = manual_solve(
         _KB_P5,
@@ -209,8 +215,10 @@ def test_m2_mode_mixed_goal_history_types():
         _first_picker,
         dispatcher=d,
     )
+    assert result is not None
     sat, proof = result
-    assert proof is None
+    assert proof is not None
+    assert isinstance(check_proof(proof), Verified)
     # ?X was bound by KB step and used by arithmetic step
     assert sat.get("?X") == Const(5)
 
@@ -249,8 +257,8 @@ def test_m2_case2_narrowing_subst():
 
     ?X=0 produces verify atom Equals(0^0-1, 0) → MalformedArithmetic on 0^0
     (contested) → Case 2 → dropped. Outcome narrows to UniqueSolution(?X=1).
-    manual_solve returns (sat, None) — DispatcherResolvedStep in history.
-    Verify substitution directly.
+    Renderer now handles DispatcherResolvedStep (Session 5b): returns
+    kernel-verified proof with arithEval for the verify atom.
     """
     poly = Func("-", (Func("^", (Var("x"), Const(0))), Const(1)))
     goal = Atom("root_of", (Meta("?X"), poly))
@@ -258,7 +266,8 @@ def test_m2_case2_narrowing_subst():
     result = manual_solve(_EMPTY_KB, goal, _first_picker, dispatcher=d)
     assert result is not None
     sat, proof = result
-    assert proof is None  # DispatcherResolvedStep → not yet renderable
+    assert proof is not None
+    assert isinstance(check_proof(proof), Verified)
     assert sat.get("?X") == Const(1)
 
 
@@ -296,7 +305,8 @@ def test_m2_multiple_solutions_solver_picker_called():
 
 
 def test_m2_multiple_solutions_picker_picks_first():
-    """solver_picker picks index 0 → binding is the first solution."""
+    """solver_picker picks index 0 → binding is the first solution.
+    Renderer now produces a kernel-verified proof (Session 5b)."""
     poly = Func(
         "+",
         (
@@ -311,8 +321,10 @@ def test_m2_multiple_solutions_picker_picks_first():
         dispatcher=d,
         solver_picker=lambda sols: 0,
     )
+    assert result is not None
     sat, proof = result
-    assert proof is None
+    assert proof is not None
+    assert isinstance(check_proof(proof), Verified)
     # First solution from SymPyFiniteRoots(roots=(2,3)) is ?X=2
     assert sat.get("?X") == Const(2)
 

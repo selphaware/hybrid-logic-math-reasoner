@@ -25,6 +25,8 @@ from hlmr.dispatch import (
     UniqueSolution,
     Underdetermined,
 )
+from hlmr.kernel.check import check_proof
+from hlmr.kernel.errors import Verified
 from hlmr.dispatch.route import Dispatcher, SolverKernelDisagreement
 from hlmr.ir.formula import Atom, Const, Equals, Func, Meta, Var
 from hlmr.ir.kb import Clause, KnowledgeBase
@@ -307,7 +309,8 @@ class TestDispatcherRoundTrip:
         result = manual_solve(kb, goals, _pick_prime_5, dispatcher=d)
         assert result is not None
         sat, proof = result
-        assert proof is None  # DispatcherResolvedSteps present
+        assert proof is not None  # renderer now handles DispatcherResolvedSteps (5b)
+        assert isinstance(check_proof(proof), Verified)
         assert sat.get("?P") == Const(5)
 
     def test_quadratic_multiple_solutions(self):
@@ -342,7 +345,8 @@ class TestDispatcherRoundTrip:
         result = manual_solve(KnowledgeBase(clauses=()), goals, _first_picker, dispatcher=d)
         assert result is not None
         sat, proof = result
-        assert proof is None  # DispatcherResolvedSteps
+        assert proof is not None  # renderer now handles DispatcherResolvedSteps (5b)
+        assert isinstance(check_proof(proof), Verified)
         assert sat.get("?X") == Const(2)
         assert sat.get("?Y") == Const(8)
 
@@ -408,7 +412,8 @@ class TestDispatcherRoundTrip:
         )
         assert result is not None
         sat, proof = result
-        assert proof is None
+        assert proof is not None  # renderer now handles multi-goal (5b)
+        assert isinstance(check_proof(proof), Verified)
         x_val = sat.get("?X")
         assert x_val is not None
         v = x_val.value

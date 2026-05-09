@@ -191,11 +191,8 @@ def _build_step_tree(history: tuple[SLDStep, ...]) -> list[list[int]]:
             case ClauseResolvedStep(clause_renamed=renamed):
                 body_len = len(renamed.body)
             case DispatcherResolvedStep():
-                # Dispatcher steps are always leaves — no body atoms to resolve.
-                # Rendering of DispatcherResolvedStep arrives in M2 Task C.
-                raise NotImplementedError(
-                    "DispatcherResolvedStep rendering arrives in M2 Task C"
-                )
+                # Dispatcher steps are leaves — no body atoms to resolve.
+                body_len = 0
         if body_len > 0:
             stack.append((i, body_len))
 
@@ -207,6 +204,20 @@ def _build_step_tree(history: tuple[SLDStep, ...]) -> list[list[int]]:
         )
 
     return children
+
+
+def _choose_equality_rule(f: Atom | Equals) -> str:
+    """Return 'eqRefl' or 'arithEval' for the given ground atom.
+
+    Policy per RENDER_M2_DESIGN.md §4.4: prefer eqRefl for syntactically
+    reflexive Equals(t, t); arithEval for everything else.
+    The check uses Python == on frozen-dataclass IR objects.
+    """
+    match f:
+        case Equals(lhs=lhs, rhs=rhs) if lhs == rhs:
+            return "eqRefl"
+        case _:
+            return "arithEval"
 
 
 def _peel_forall(f: Formula, t: Term) -> Formula:
@@ -223,18 +234,24 @@ def _peel_forall(f: Formula, t: Term) -> Formula:
 # ---------------------------------------------------------------------------
 
 
-def render(state: SLDState, kb: KnowledgeBase, query: Atom | Equals) -> Proof:
+def render(
+    state: SLDState,
+    kb: KnowledgeBase,
+    query: Atom | Equals | tuple[Atom | Equals, ...],
+) -> Proof:
     """Convert a successful SLD derivation into a Fitch-style ND proof.
 
     Pre:  state.goals == () (SLD has succeeded).
     Post: returned Proof has goal = apply_to_formula(saturated_subst, query)
-          and passes check_proof.
+          (or the andI-chained conjunction for multi-goal queries) and
+          passes check_proof.
 
     Raises RenderError on precondition violations or detected renderer bugs
     (unsaturated metas, structural mismatches, etc.).
 
-    The rendered proof uses only Premise, forallE, andI, and impE.
-    No boxes, no assumptions, all lines at depth 0.
+    M1 alphabet: {Premise, forallE, andI, impE}.
+    M2 alphabet: {Premise, forallE, andI, impE, arithEval, eqRefl}.
+    All lines at depth 0; no boxes, no assumptions.
     """
     if state.goals:
         raise RenderError(
@@ -244,13 +261,32 @@ def render(state: SLDState, kb: KnowledgeBase, query: Atom | Equals) -> Proof:
     if not history:
         raise RenderError("render: empty history — no SLD steps were taken")
 
+    goals: tuple[Atom | Equals, ...] = (
+        (query,) if isinstance(query, (Atom, Equals)) else tuple(query)
+    )
+
     sat = _saturate(state.subst)
     children = _build_step_tree(history)
 
-    # Unique clauses in first-use order (identity, not structural equality).
+    # Identify root steps (no parent). Roots correspond 1-to-1 with goals.
+    has_parent: set[int] = set()
+    for child_list in children:
+        for c in child_list:
+            has_parent.add(c)
+    roots = [i for i in range(len(history)) if i not in has_parent]
+
+    if len(roots) != len(goals):
+        raise RenderError(
+            f"render: {len(roots)} top-level history step(s) for "
+            f"{len(goals)} goal(s) — history/goal count mismatch"
+        )
+
+    # Unique KB clauses from ClauseResolvedSteps, in first-use order.
     seen: set[int] = set()
     unique_clauses: list[Clause] = []
     for step in history:
+        if not isinstance(step, ClauseResolvedStep):
+            continue
         c = step.clause_used
         if id(c) not in seen:
             seen.add(id(c))
@@ -281,10 +317,18 @@ def render(state: SLDState, kb: KnowledgeBase, query: Atom | Equals) -> Proof:
         """Emit the subproof for step i; return the line number of its head."""
         step = history[i]
 
-        # Render body subproofs first (DFS children before parent).
-        body_lines: list[int] = []
+        # M2: DispatcherResolvedStep — one arithEval or eqRefl line (leaf).
+        if isinstance(step, DispatcherResolvedStep):
+            rule_name = _choose_equality_rule(step.ground_atom)
+            return _emit(
+                step.ground_atom,
+                RuleApp(rule=rule_name, line_refs=(), box_refs=(), extra={}),
+            )
+
+        # M1: ClauseResolvedStep — DFS render of body children, then head.
+        body_line_nums: list[int] = []
         for child_idx in children[i]:
-            body_lines.append(render_step(child_idx))
+            body_line_nums.append(render_step(child_idx))
 
         clause = step.clause_used
         var_map = _extract_var_map(clause, step.clause_renamed)
@@ -310,17 +354,17 @@ def render(state: SLDState, kb: KnowledgeBase, query: Atom | Equals) -> Proof:
             return current_line
 
         # Rule: build the conjunction of body-subproof lines, then impE.
-        if len(body_lines) == 1:
-            conj_line = body_lines[0]
+        if len(body_line_nums) == 1:
+            conj_line = body_line_nums[0]
         else:
-            conj_formula = _get_formula(body_lines[0])
-            conj_line = body_lines[0]
-            for j in range(1, len(body_lines)):
-                next_formula = _get_formula(body_lines[j])
+            conj_formula = _get_formula(body_line_nums[0])
+            conj_line = body_line_nums[0]
+            for j in range(1, len(body_line_nums)):
+                next_formula = _get_formula(body_line_nums[j])
                 conj_formula = And(conj_formula, next_formula)
                 conj_line = _emit(
                     conj_formula,
-                    RuleApp("andI", line_refs=(conj_line, body_lines[j])),
+                    RuleApp("andI", line_refs=(conj_line, body_line_nums[j])),
                 )
 
         impl_formula = _get_formula(current_line)
@@ -335,7 +379,27 @@ def render(state: SLDState, kb: KnowledgeBase, query: Atom | Equals) -> Proof:
             RuleApp("impE", line_refs=(current_line, conj_line)),
         )
 
-    render_step(0)
+    # Render each top-level goal subproof and collect the final line number.
+    final_line_per_goal: list[int] = []
+    for root_idx in roots:
+        final_line_per_goal.append(render_step(root_idx))
+
+    # For multi-goal queries: emit a left-associated andI chain combining
+    # the per-goal final lines (RENDER_M2_DESIGN.md §4.6).
+    if len(goals) > 1:
+        running_line = final_line_per_goal[0]
+        running_formula = _get_formula(running_line)
+        for j in range(1, len(final_line_per_goal)):
+            right_line = final_line_per_goal[j]
+            right_formula = _get_formula(right_line)
+            running_formula = And(running_formula, right_formula)
+            running_line = _emit(
+                running_formula,
+                RuleApp("andI", line_refs=(running_line, right_line)),
+            )
+        proof_goal: Formula = running_formula
+    else:
+        proof_goal = _get_formula(final_line_per_goal[0])
 
     # Validate: no Meta terms survived into the rendered proof.
     for line in lines:
@@ -344,5 +408,4 @@ def render(state: SLDState, kb: KnowledgeBase, query: Atom | Equals) -> Proof:
                 f"meta survived in rendered proof at line {line.number}"
             )
 
-    goal = apply_to_formula(sat, query)
-    return Proof(tuple(lines), goal)
+    return Proof(tuple(lines), proof_goal)
