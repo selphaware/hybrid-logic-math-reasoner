@@ -502,6 +502,45 @@ def test_last_outside_fragment_overwritten_by_later_rejection():
     assert d.last_outside_fragment.classification == OutsideFragmentReason.SOLVER_TIMEOUT
 
 
+def test_last_outside_fragment_cleared_per_call():
+    """Regression: last_outside_fragment must be cleared at the start of every
+    dispatch() call. Without this fix, a long-lived Dispatcher would carry a
+    stale OutsideFragment across subsequent successful or NoSolution outcomes,
+    confusing the REPL on a query that failed for a different reason.
+
+    Sequence: OutsideFragment → UniqueSolution → NoSolution.
+    After each non-OutsideFragment call, the field must be None.
+    """
+    z3_bridge = FakeZ3Bridge(next_result=Z3Unsat())
+    sympy_bridge = FakeSymPyBridge(next_result=SymPyNoRealRoots())
+    d = Dispatcher(
+        z3_bridge=z3_bridge,
+        sympy_bridge=sympy_bridge,
+        kb=_EMPTY_KB,
+    )
+
+    # Call 1: transcendental → REJECTED → OutsideFragment(TRANSCENDENTAL)
+    goal_1 = Atom("root_of", (Meta("?X"), Func("^", (Const(2), Var("x")))))
+    result_1 = d.dispatch(goal_1, {})
+    assert isinstance(result_1.outcome, OutsideFragment)
+    assert d.last_outside_fragment is not None
+    assert d.last_outside_fragment.classification == OutsideFragmentReason.TRANSCENDENTAL
+
+    # Call 2: Z3 returns Sat → UniqueSolution; stale fragment must be cleared.
+    z3_bridge.next_result = Z3Sat(model={"?P": 5})
+    goal_2 = Atom(">", (Meta("?P"), Const(2)))
+    result_2 = d.dispatch(goal_2, {})
+    assert isinstance(result_2.outcome, UniqueSolution)
+    assert d.last_outside_fragment is None  # must NOT linger from call 1
+
+    # Call 3: Z3 returns Unsat → NoSolution; field must remain None.
+    z3_bridge.next_result = Z3Unsat()
+    goal_3 = Atom("<", (Meta("?Q"), Const(0)))
+    result_3 = d.dispatch(goal_3, {})
+    assert isinstance(result_3.outcome, NoSolution)
+    assert d.last_outside_fragment is None  # still None; not set by NoSolution
+
+
 # ---------------------------------------------------------------------------
 # H. §11.6 soundness backstop
 # ---------------------------------------------------------------------------

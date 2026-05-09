@@ -1472,6 +1472,17 @@ This avoids changing `manual_solve`'s return type beyond the
 existing `(subst, proof) | (subst, None) | None` triple while
 giving the REPL enough context to be helpful.
 
+**Lifecycle.** `last_outside_fragment` is cleared at the start of
+every `dispatch()` call (the first action in the method body) and
+set if and only if that call's outcome is `OutsideFragment`. After
+`dispatch()` returns, the field reflects the most recent call's
+`OutsideFragment` status, or `None` if the most recent call was not
+`OutsideFragment`. This ensures a long-lived Dispatcher (across an
+interactive REPL session) does not carry a stale `OutsideFragment`
+into subsequent calls — the REPL polls the field after every
+`manual_solve` returning `None`, and the field correctly reflects
+only the current call's outcome.
+
 ### 11.4 Bridge crash
 
 A Z3 or SymPy bridge raises an unexpected exception. The dispatcher

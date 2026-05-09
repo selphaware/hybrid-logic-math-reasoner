@@ -301,6 +301,10 @@ class Dispatcher:
         self, goal: Atom | Equals, subst: Substitution
     ) -> DispatchResult:
         """Classify + route + verify per DISPATCH §5.1."""
+        # Per DISPATCH_DESIGN.md §11.3 lifecycle: clear at start of every
+        # dispatch() call so a successful or NoSolution outcome doesn't leave
+        # a stale OutsideFragment from a previous call visible to the REPL.
+        self.last_outside_fragment = None
         g = apply_to_formula(subst, goal)
         assert isinstance(g, (Atom, Equals))
 
