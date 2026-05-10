@@ -5,9 +5,8 @@ goals over a user-supplied knowledge base, renders every result as a
 Fitch-style natural-deduction proof, and verifies it through a small
 trusted kernel before reporting success.
 
-**Status:** M0 and M1 shipped. M2 (arithmetic + dispatcher) is mid-flight
-— spec frozen, all three Opus 4.7 design docs approved, Sonnet
-implementation up next. M3 (theory-growth POC) is spec-to-write.
+**Status:** M0, M1, and M2 shipped. M3 (theory-growth POC) is the next
+milestone with a written PRD.
 
 ---
 
@@ -65,7 +64,7 @@ verified theorem library — **not** a frontier-grade general
 mathematician, **not** a Mathlib clone, **not** a Lean replacement.
 Different foundations, different scale, different community model.
 
-### The motivating example (demoable by end of M2)
+### The motivating example (M2, shipped — see [`docs/tutorial.md`](docs/tutorial.md))
 
 ```
 KB:
@@ -129,75 +128,28 @@ implementation detail.
 
 ## M2 — arithmetic queries
 
-### Installation
+M2 adds linear arithmetic over ℤ/ℚ via Z3, symbolic algebraic equations
+via SymPy, and a new kernel rule (`arithEval`) that verifies arithmetic
+witnesses by exact ground evaluation. Mixed logical-and-arithmetic
+queries — "find a prime strictly between 2 and 6 that isn't 4" — produce
+a single Fitch proof combining KB resolution and arithmetic evaluation,
+both checked by the same kernel.
 
-M2 adds two runtime dependencies (already in `pyproject.toml`):
+The two new runtime dependencies (`z3-solver` and `sympy`) are declared
+in `pyproject.toml`; `pip install -e ".[test]"` brings them in.
 
-```powershell
-pip install -e ".[test]"   # installs z3-solver and sympy
-```
+For a hands-on tutorial with worked examples — installation through
+fluent REPL use, a line-by-line walkthrough of each of the four demos,
+and the system's deliberate limits explained with reproducible
+queries — see **[`docs/tutorial.md`](docs/tutorial.md)**.
 
-### Running the M2 demos
+Architecture pointers for readers who want the design rationale:
 
-```powershell
-# §2 prime example: KB prime facts + Z3 inequalities → ?P = 5
-python -m hlmr demo prime_search
-
-# Quadratic: SymPy root-finding → ?X = 2 (one of {2, 3})
-python -m hlmr demo quadratic
-
-# Linear system: Z3 → ?X = 2, ?Y = 8
-python -m hlmr demo linear_system
-
-# Honest rejection: transcendental outside the M2 fragment
-python -m hlmr demo outside_fragment
-```
-
-Proof JSON artifacts land in `proofs/m2/`.
-
-### Using the M2 REPL
-
-```powershell
-python -m hlmr repl
-```
-
-The REPL auto-detects arithmetic predicates (`plus`, `minus`, `times`,
-`divides`, `root_of`) and dispatches them to Z3 or SymPy automatically — no
-manual pick required for those goals. KB predicates still use the manual
-pick loop as in M1.
-
-```
-kb> prime(2).
-kb> prime(3).
-kb> prime(5).
-kb> prime(7).
-kb> :query
-?- plus(?X, ?Y, 10).
-Dispatching: plus(?X, ?Y, 10) (z3)
-...
-?- root_of(?X, x^2-5x+6).     # parsed as func syntax
-Dispatching: root_of(?X, ...) (sympy)
-Multiple solutions found. Pick one:
-  [0] {?X = 2}
-  [1] {?X = 3}
-choice: 0
-Solved: ?X = 2
-```
-
-Use `:solver` to inspect the most recent dispatcher decision:
-
-```
-:solver
-  Classification: route=sympy
-  Outcome: UniqueSolution: {?X = 2}
-```
-
-### Architecture pointers
-
-- [`prd_milestone_2.md`](prd_milestone_2.md) — full M2 spec and §14 definition of done
-- [`src/hlmr/dispatch/DISPATCH_DESIGN.md`](src/hlmr/dispatch/DISPATCH_DESIGN.md) — Opus 4.7 design for the dispatcher: constraint classification, Z3/SymPy dispatch paths, Case 1/Case 2 solver/kernel disagreement handling
-- [`src/hlmr/kernel/ARITH_EVAL_DESIGN.md`](src/hlmr/kernel/ARITH_EVAL_DESIGN.md) — `arithEval` rule design
-- [`src/hlmr/solve/RENDER_M2_DESIGN.md`](src/hlmr/solve/RENDER_M2_DESIGN.md) — renderer extension design
+- [`prd_milestone_2.md`](prd_milestone_2.md) — full M2 spec and §14 definition of done.
+- [`docs/strategic_direction.md`](docs/strategic_direction.md) — the long-term vision; §6.9 explains why the kernel rejects contested mathematical content (`0^0`) by design.
+- [`src/hlmr/dispatch/DISPATCH_DESIGN.md`](src/hlmr/dispatch/DISPATCH_DESIGN.md) — dispatcher design: constraint classification, Z3/SymPy paths, Case 1/Case 2 solver-kernel disagreement.
+- [`src/hlmr/kernel/ARITH_EVAL_DESIGN.md`](src/hlmr/kernel/ARITH_EVAL_DESIGN.md) — `arithEval` kernel rule.
+- [`src/hlmr/solve/RENDER_M2_DESIGN.md`](src/hlmr/solve/RENDER_M2_DESIGN.md) — renderer extension.
 
 ---
 
