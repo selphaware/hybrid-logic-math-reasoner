@@ -123,9 +123,16 @@ class Z3Bridge:
                     == self._term(c, referenced)
                 )
             case Atom(pred="divides", args=(a, b, c)):
-                return (
-                    self._term(a, referenced) / self._term(b, referenced)
-                    == self._term(c, referenced)
+                # Z3's theory of rationals treats x/0 = 0 as a total function,
+                # so without a guard Z3 returns sat with b=0, which arithEval
+                # rejects (Python's Fraction raises ZeroDivisionError). Adding
+                # an explicit b != 0 constraint aligns Z3's model space with
+                # arithEval's domain — any sat result is guaranteed non-zero
+                # divisor and survives the verify-before-return step cleanly.
+                b_term = self._term(b, referenced)
+                return z3.And(
+                    b_term != z3.RealVal(0, ctx=self._ctx),
+                    self._term(a, referenced) / b_term == self._term(c, referenced),
                 )
             case _:
                 raise Z3TranslationError(
