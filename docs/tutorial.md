@@ -293,28 +293,79 @@ substitution that still contains free metavariables. The principle: the
 system never picks one of many equally-valid witnesses without a
 specific reason to.
 
-### Limits of the REPL parser
+### Multi-goal queries and arithmetic operators
 
-The REPL's parser was written in M1 for first-order Horn-clause syntax
-and does not yet accept the symbolic operators `+ - * / ^ < > <= >= !=`
-or comma-separated multi-goal queries. From the REPL today, you can
-issue:
+The M2 parser accepts three forms of syntax that the M1 parser did not:
+comma-separated multi-goal queries, comparison and arithmetic operator
+atoms (`<`, `<=`, `>`, `>=`, `!=`, `+`, `-`, `*`, `/`, `^`), and
+rational literals (e.g. `3/4` lexed as `Const(Fraction(3, 4))`).
 
-- KB queries with arbitrary clause structure (M1 capability).
-- Single-goal arithmetic queries via the LNAME predicates `plus`,
-  `minus`, `times`, `divides`, `root_of`.
-- Single-goal equations via `?- term1 = term2.`.
+The `prime_search` demo from §2 can now be typed directly in the REPL:
 
-You **cannot** type:
+```text
+kb> prime(2).
+  Added: prime(2).
+kb> prime(3).
+  Added: prime(3).
+kb> prime(5).
+  Added: prime(5).
+kb> prime(7).
+  Added: prime(7).
+kb> :query
+Switched to query mode. Type '?- goal.' to query.
 
-- `?- ?X > 5.` (operator-form atoms — parser doesn't recognise `>`).
-- `?- prime(?P), gt(?P, 2).` (multi-goal — parser doesn't recognise `,`).
-- `?- root_of(?X, x^2 - 5*x + 6).` (polynomial syntax with `^ * -`).
+?- prime(?P), ?P > 2, ?P < 6, ?P != 4.
 
-The four shipped CLI demos use programmatic IR construction to express
-the richer queries the engine *can* handle. Extending the REPL parser
-to accept richer arithmetic syntax is future work (see PRD M2 §11 and
-the deferred `arithmetic-grammar` track).
+Goal (4 remaining): prime(?P)
+Candidates:
+  1. prime(2).  (fact, prime_1)
+  2. prime(3).  (fact, prime_1)
+  3. prime(5).  (fact, prime_1)
+  4. prime(7).  (fact, prime_1)
+
+> 3
+Dispatching: >(5, 2) (z3)
+Dispatching: <(5, 6) (z3)
+Dispatching: !=(5, 4) (z3)
+
+Solved: ?P = 5
+Proof: 7 lines, kernel-verified.
+Type ':show last' to display, ':export proof.json' to save.
+```
+
+Picking candidate 3 (`prime(5)`) binds `?P` to 5 and automatically
+dispatches the three remaining goals. Comparison goals never prompt for
+candidate selection — they route to Z3, which confirms each one, and the
+kernel records an `arithEval` line. Only KB-routed goals show a candidates
+list.
+
+Polynomial expressions in `root_of` also work:
+
+```text
+?- root_of(?X, x^2 - 5*x + 6).
+Dispatching: root_of(?X, +(-(^(x, 2), *(5, x)), 6)) (sympy)
+
+Multiple solutions found. Pick one:
+  [0] {?X = 2}
+  [1] {?X = 3}
+
+> 0
+
+Solved: ?X = 2
+Proof: 1 lines, kernel-verified.
+```
+
+Arithmetic expressions use standard precedence: `^` binds tightest, then
+`*`/`/`, then `+`/`-`. The `Dispatching:` line shows the internal
+prefix-form IR; `+(-(^(x,2), *(5,x)), 6)` is the prefix encoding of
+`(x^2 - 5x) + 6`, matching the surface expression by standard
+left-association of `+`/`-`.
+
+**What is not yet supported:** typed metavariable annotations — `?X :
+Integer`, `?X : Rational`, `?X : {2, 3, 5}`. A bare `?X` is a
+metavariable with no declared kind, which is the M1 behaviour. Typed-meta
+syntax requires an IR extension (`Meta.kind` field) that will ship in a
+separate session.
 
 ---
 
@@ -433,8 +484,7 @@ narrows to `UniqueSolution` or `NoSolution` if some witnesses are
 contested-shape rejections.)
 
 In the REPL, `MultipleSolutions` becomes interactive: the system shows
-you the numbered list and asks you to pick one. You'd see (if the
-parser supported the polynomial syntax):
+you the numbered list and asks you to pick one:
 
 ```text
 Multiple solutions found. Pick one:
@@ -669,20 +719,31 @@ symbolic solver returns. (See
 [`src/hlmr/solvers/sympy_bridge.py`](../src/hlmr/solvers/sympy_bridge.py)
 `_finite_set_to_result` for the exact rejection logic.)
 
-### 6.5 The REPL parser limits
+### 6.5 Typed metavariable syntax
 
-A practical limit, not a theoretical one. The M1 parser handles
-Horn-clause syntax with LNAME predicates and integer literals. It
-doesn't yet accept symbolic operators (`>`, `+`, `^`, etc.) or
-comma-separated multi-goal queries. The dispatcher and renderer
-support all of those — they're exercised by the four CLI demos via
-programmatic IR construction — but they're not yet typeable through
-the REPL.
+The M2 parser extension (§4) brought operators, multi-goal queries, and
+rational literals into the REPL. The one remaining parser limit is typed
+metavariable annotations.
 
-This is shipping work for a future milestone (or a focused parser
-extension session within M2 if it becomes a friction point). In the
-meantime, REPL-accessible arithmetic is `plus/minus/times/divides`
-ternary atoms and `Equals` between simple terms.
+The bare `?X` form works as always. What the parser does not yet accept
+is a kind declaration after the metavariable name:
+
+```text
+?- root_of(?X : Integer, x^2 - 5*x + 6).   ← parse error
+?- prime(?P : {2, 3, 5, 7}).                ← parse error
+```
+
+A typed annotation would let you declare the search domain explicitly —
+useful when a metavariable appears in several goals with conflicting
+solver routes. The reason it isn't supported yet is an IR gap: the
+`Meta` dataclass has no `kind` field and `MetaKind` doesn't exist. The
+surface syntax and the dispatcher extensions are straightforward once
+the IR is in place; they'll ship together in a focused session.
+
+In the meantime, use bare `?X` and let the dispatcher's classification
+rules determine the solver route automatically. If the route is
+surprising, `:solver` after a query shows the classification decision
+(see §7).
 
 ---
 
