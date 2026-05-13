@@ -135,7 +135,8 @@ def test_show_missing_arg_raises() -> None:
 def test_query_in_kb_mode() -> None:
     cmd = parse_command("?- mortal(socrates).", False)
     assert cmd.type == "query"
-    assert cmd.args["goal"] == Atom("mortal", (Const("socrates"),))
+    # M2: cmd.args["goals"] is a tuple (1-element for single-goal queries).
+    assert cmd.args["goals"] == (Atom("mortal", (Const("socrates"),)),)
 
 
 def test_query_in_query_mode() -> None:
@@ -147,7 +148,8 @@ def test_query_with_meta() -> None:
     cmd = parse_command("?- ancestor(?X, alice).", False)
     assert cmd.type == "query"
     from hlmr.ir.formula import Atom, Const, Meta
-    assert cmd.args["goal"] == Atom("ancestor", (Meta("?X"), Const("alice")))
+    # M2: cmd.args["goals"] is a tuple (1-element for single-goal queries).
+    assert cmd.args["goals"] == (Atom("ancestor", (Meta("?X"), Const("alice"))),)
 
 
 def test_query_bad_syntax_raises() -> None:

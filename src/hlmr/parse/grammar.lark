@@ -1,16 +1,26 @@
-// Prolog-flavoured surface syntax for HLMR M1. ASCII only.
-// Unicode support is deferred to M2.
+// Prolog-flavoured surface syntax for HLMR. ASCII only.
 //
 // Three start rules are exposed to callers:
-//   file          – zero or more clauses (used by parse_kb)
-//   single_clause – exactly one clause  (used by parse_clause)
-//   single_query  – one query goal      (used by parse_query)
+//   file          – zero or more clauses           (used by parse_kb)
+//   single_clause – exactly one clause             (used by parse_clause)
+//   single_query  – one comma-separated goal list  (used by parse_query)
+//
+// M1: Horn clauses with LNAME predicates and integer constants.
+// M2 (this file): adds (1) multi-goal queries via comma, (2) rational
+// literals like 3/4, (3) operator atoms (<, <=, >, >=, !=, =) and
+// arithmetic operator-form terms (+, -, *, /, ^) with standard
+// precedence. Typed metavariables (PRD §11 item 4) deferred pending
+// §6.1 IR work.
 
 // ─── Start rules ─────────────────────────────────────────────────────────────
 
 file: clause*
 single_clause: clause
-single_query: "?-" literal "."
+single_query: "?-" goals "."
+
+// Multi-goal query body: one or more literals separated by commas.
+// `goals` produces a tuple at the transformer level.
+goals: literal ("," literal)*
 
 // ─── Clause structure ─────────────────────────────────────────────────────────
 // A fact is a clause with an empty body.
@@ -20,27 +30,66 @@ clause: literal (":-" body)? "."
 body: literal ("," literal)*
 
 // ─── Literals (atoms and equality) ───────────────────────────────────────────
-// ?literal makes the rule transparent: it is inlined into its parent tree,
-// so no extra Tree node appears for "literal" itself.
+// In M2 a literal is one of:
+//   - a comparison atom: expr COMP_OP expr   (with COMP_OP one of <, <=, >, >=, !=)
+//   - a predicate atom:  LNAME (with optional arglist)
+//   - an equality:       expr = expr        (produces the Equals IR node)
+//
+// The order matters for Lark's Earley parser: try comparison and
+// equality before predicate so operator forms are preferred where they
+// match.
 
-?literal: atom | equals
+?literal: comparison_atom
+        | equals_literal
+        | predicate_atom
 
-atom: LNAME "(" arglist ")"   -> atom_args
-    | LNAME                    -> atom_no_args
+comparison_atom: expr COMP_OP expr
+COMP_OP: "<=" | ">=" | "!=" | "<" | ">"
 
-equals: term "=" term
+equals_literal: expr "=" expr
 
-// ─── Terms ────────────────────────────────────────────────────────────────────
+predicate_atom: LNAME "(" arglist ")"   -> atom_args
+              | LNAME                    -> atom_no_args
 
-arglist: term ("," term)*
+// ─── Expressions with operator precedence ────────────────────────────────────
+// Lowest precedence (loosest binding) at top; tightest binding at bottom.
+//   +, -  : left-associative, level 4
+//   *, /  : left-associative, level 3
+//   ^     : right-associative, level 2
+// `?expr` rules are transparent (inlined) when they have a single child.
 
-term: VARIABLE                  -> var_term
-    | META                      -> meta_term
-    | LNAME "(" arglist ")"     -> func_term
-    | LNAME                     -> const_term
-    | INTEGER                   -> int_term
+?expr: expr_add
+
+?expr_add: expr_mul
+         | expr_add "+" expr_mul    -> add_term
+         | expr_add "-" expr_mul    -> sub_term
+
+?expr_mul: expr_pow
+         | expr_mul "*" expr_pow    -> mul_term
+         | expr_mul "/" expr_pow    -> div_term
+
+// Right-associative power: rhs recurses on expr_pow, not expr_atom.
+?expr_pow: expr_atom
+         | expr_atom "^" expr_pow   -> pow_term
+
+?expr_atom: RATIONAL                 -> rational_term
+          | INTEGER                  -> int_term
+          | META                     -> meta_term
+          | VARIABLE                 -> var_term
+          | LNAME "(" arglist ")"    -> func_term
+          | LNAME                    -> const_term
+          | "(" expr ")"
+
+arglist: expr ("," expr)*
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
+
+// Rational literal: integer/integer with NO whitespace between them and
+// the slash. The denominator must be positive (`[1-9][0-9]*`); zero
+// denominators reject at lex time.  Tokens with longer regex match first
+// in Lark's standard lexer, so `3/4` matches RATIONAL before INTEGER or
+// the binary `/` operator could split it.
+RATIONAL: /(0|[1-9][0-9]*)\/[1-9][0-9]*/
 
 // Metavariable: ?Uppercase... (valid only in queries, enforced in parser.py)
 META: /\?[A-Z][a-zA-Z0-9_]*/

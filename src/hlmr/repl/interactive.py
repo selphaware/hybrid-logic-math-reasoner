@@ -150,7 +150,7 @@ def _solver_picker_interactive(
 
 
 def _run_query_loop(
-    goal: Atom | Equals,
+    goals: tuple[Atom | Equals, ...],
     repl_state: _ReplState,
     session: PromptSession,
     recorder: SessionRecorder,
@@ -160,15 +160,18 @@ def _run_query_loop(
 
     M2 extension: arithmetic goals (Z3/SYMPY/REJECTED) are dispatched
     automatically when a Dispatcher is available. KB goals use the manual
-    pick loop as before. 'back' only undoes KB picks.
+    pick loop as before. 'back' only undoes KB picks. Multi-goal queries
+    (`?- g1, g2, g3.`) are accepted as a tuple of goals.
     """
     kb = repl_state.kb
     dispatcher = repl_state.dispatcher
     gen = FreshNameGen()
-    sld = SLDState(goals=(goal,), subst={}, history=())
+    sld = SLDState(goals=goals, subst={}, history=())
     stack: list[SLDState] = []  # for 'back' (KB steps only)
 
-    recorder.query_start(goal)
+    # Recorder logs the first goal; M2 v2 events (emitted by the dispatcher)
+    # capture per-goal classify/route info for multi-goal queries.
+    recorder.query_start(goals[0])
 
     while sld.goals:
         current = sld.goals[0]
@@ -310,9 +313,12 @@ def _run_query_loop(
             else:
                 print("  Use: pick N, N, candidates, back, abort.", file=stdout)
 
-    # All goals exhausted — check for underdetermined result before render
+    # All goals exhausted — check for underdetermined result before render.
+    # For multi-goal queries, the query metas are the union over all goals.
     _sat_pre = _saturate(sld.subst)
-    _qmetas = _query_meta_names(goal)
+    _qmetas: set[str] = set()
+    for _g in goals:
+        _qmetas |= _query_meta_names(_g)
     if any(not _is_ground(apply_to_term(_sat_pre, Meta(n))) for n in _qmetas):
         sat_str = format_substitution(_sat_pre)
         print(
@@ -324,7 +330,12 @@ def _run_query_loop(
         return
 
     try:
-        proof = render(sld, kb, goal)
+        # The M2 renderer accepts a tuple of goals; for single-goal queries,
+        # pass the tuple as-is — the renderer handles the 1-element case.
+        render_query: Atom | Equals | tuple[Atom | Equals, ...] = (
+            goals[0] if len(goals) == 1 else goals
+        )
+        proof = render(sld, kb, render_query)
     except RenderError as e:
         print(f"\nRender error: {e}", file=stdout)
         recorder.query_end("render_error")
@@ -464,11 +475,14 @@ def _dispatch(
             state.dispatcher.kb = state.kb
         print(f"  Added: {_fmt_clause(clause)}", file=stdout)
     elif cmd.type == "query":
-        goal = cmd.args["goal"]
-        assert isinstance(goal, (Atom, Equals))
+        # M2: parse_query returns tuple[Atom | Equals, ...] (1-tuple for
+        # single-goal queries; n-tuple for multi-goal). The query loop
+        # accepts the tuple directly.
+        goals = cmd.args["goals"]
+        assert isinstance(goals, tuple) and len(goals) >= 1
         if not state.in_query_mode:
             state.in_query_mode = True
-        _run_query_loop(goal, state, session, recorder, stdout)
+        _run_query_loop(goals, state, session, recorder, stdout)
     elif cmd.type == "solver":
         _do_solver(state, stdout)
     elif cmd.type in ("pick", "candidates", "back", "abort"):

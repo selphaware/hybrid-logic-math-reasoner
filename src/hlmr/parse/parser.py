@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from fractions import Fraction
 from pathlib import Path
 
 from lark import Lark, Transformer
@@ -39,6 +40,11 @@ class _IRTransformer(Transformer):
     def int_term(self, items: list) -> Const:
         return Const(int(str(items[0])))
 
+    def rational_term(self, items: list) -> Const:
+        """RATIONAL token of form `n/m` (no whitespace) → Const(Fraction(n, m))."""
+        n_str, m_str = str(items[0]).split("/", 1)
+        return Const(Fraction(int(n_str), int(m_str)))
+
     def func_term(self, items: list) -> Func:
         name = str(items[0])
         args: list[Term] = items[1]
@@ -46,6 +52,23 @@ class _IRTransformer(Transformer):
 
     def arglist(self, items: list) -> list[Term]:
         return list(items)
+
+    # --- M2 operator-form arithmetic terms ---
+
+    def add_term(self, items: list) -> Func:
+        return Func("+", (items[0], items[1]))
+
+    def sub_term(self, items: list) -> Func:
+        return Func("-", (items[0], items[1]))
+
+    def mul_term(self, items: list) -> Func:
+        return Func("*", (items[0], items[1]))
+
+    def div_term(self, items: list) -> Func:
+        return Func("/", (items[0], items[1]))
+
+    def pow_term(self, items: list) -> Func:
+        return Func("^", (items[0], items[1]))
 
     # --- Atoms and equality ---
 
@@ -55,15 +78,41 @@ class _IRTransformer(Transformer):
     def atom_args(self, items: list) -> Atom:
         name = str(items[0])
         args: list[Term] = items[1]
-        return Atom(name, tuple(args))
+        atom = Atom(name, tuple(args))
+        # Polynomial-variable rewrite: in `root_of(target, poly)`, the
+        # second argument is conventionally a polynomial whose bare lowercase
+        # identifiers are variables (e.g. `x`, `y`), not Prolog constants.
+        # The classifier and SymPy bridge both accept Var or Meta as the
+        # polynomial's free variable; the M1 grammar parses lowercase names
+        # as Const(str). To make `root_of(?X, x^2 - 5*x + 6)` produce the
+        # same IR as the programmatic CLI demo, rewrite Const(str) → Var(str)
+        # inside the second argument of root_of/2 only.
+        if name == "root_of" and len(atom.args) == 2:
+            poly = _rewrite_lname_consts_to_vars(atom.args[1])
+            atom = Atom(name, (atom.args[0], poly))
+        return atom
 
-    def equals(self, items: list) -> Equals:
+    def comparison_atom(self, items: list) -> Atom:
+        """expr COMP_OP expr → Atom(op, (lhs, rhs)). COMP_OP ∈ {<, <=, >, >=, !=}."""
+        lhs = items[0]
+        op = str(items[1])
+        rhs = items[2]
+        return Atom(op, (lhs, rhs))
+
+    def equals_literal(self, items: list) -> Equals:
+        """expr "=" expr → Equals IR node."""
         return Equals(items[0], items[1])
 
     # --- Body (returns list; clause() converts to tuple) ---
 
     def body(self, items: list) -> list[Atom | Equals]:
         return list(items)
+
+    # --- Goals (multi-goal query body) ---
+
+    def goals(self, items: list) -> tuple[Atom | Equals, ...]:
+        """Multi-goal body: returns a tuple of literals."""
+        return tuple(items)
 
     # --- Clause (returns pair; KnowledgeBase.Clause built in public API) ---
 
@@ -81,7 +130,8 @@ class _IRTransformer(Transformer):
     ) -> tuple[Atom | Equals, tuple[Atom | Equals, ...]]:
         return items[0]
 
-    def single_query(self, items: list) -> Atom | Equals:
+    def single_query(self, items: list) -> tuple[Atom | Equals, ...]:
+        """Returns a tuple of one or more goal literals."""
         return items[0]
 
     def file(
@@ -149,6 +199,24 @@ def _literal_has_meta(f: Atom | Equals) -> bool:
             return _term_has_meta(lhs) or _term_has_meta(rhs)
 
 
+def _rewrite_lname_consts_to_vars(t: Term) -> Term:
+    """Recursively rewrite Const(str) → Var(str) inside a term.
+
+    Used to convert the second argument of `root_of(target, poly)` so that
+    bare lowercase identifiers in polynomial position (like `x` in
+    `x^2 - 5*x + 6`) become Vars rather than Prolog constants. Numeric
+    Consts (int, Fraction) are unchanged. Func args are recursed into.
+    """
+    match t:
+        case Const(value=v) if isinstance(v, str):
+            return Var(v)
+        case Func(name=name, args=args):
+            new_args = tuple(_rewrite_lname_consts_to_vars(a) for a in args)
+            return Func(name, new_args) if new_args != args else t
+        case _:
+            return t
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -172,10 +240,13 @@ def parse_clause(source: str) -> Clause:
     return Clause(f"{_head_pred(head)}_1", head, body)
 
 
-def parse_query(source: str) -> Atom | Equals:
-    """Parse a single query (must start with '?-' and end with '.').
+def parse_query(source: str) -> tuple[Atom | Equals, ...]:
+    """Parse a single `?-` query, returning a tuple of one or more goals.
 
-    Returns the goal literal. Metavariables are allowed in queries.
+    M2 extension: queries may contain comma-separated goals like
+    `?- prime(?P), ?P > 2.`. The result is a tuple of literals; single-goal
+    queries return a one-element tuple for uniform handling. Metavariables
+    are allowed in queries.
     Raises ParseError on invalid input.
     """
     try:

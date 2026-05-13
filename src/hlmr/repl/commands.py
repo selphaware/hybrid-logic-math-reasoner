@@ -47,10 +47,13 @@ def parse_command(line: str, in_query_mode: bool) -> Command:
     # ?- prefix works in both modes
     if stripped.startswith("?-"):
         try:
-            goal = parse_query(stripped)
+            goals = parse_query(stripped)
         except ParseError as e:
             raise CommandError(str(e)) from e
-        return Command("query", {"goal": goal})
+        # parse_query returns tuple[Atom | Equals, ...] in M2 (always a
+        # tuple — 1-element for single-goal queries, n-element for
+        # comma-separated multi-goal queries).
+        return Command("query", {"goals": goals})
 
     if in_query_mode:
         return _parse_query_mode(stripped)

@@ -164,28 +164,29 @@ def test_clause_bad_syntax_raises() -> None:
 
 
 def test_query_ground() -> None:
+    # M2 parse_query returns tuple[Atom | Equals, ...] (1-tuple for single goal).
     q = parse_query("?- mortal(socrates).")
-    assert q == Atom("mortal", (Const("socrates"),))
+    assert q == (Atom("mortal", (Const("socrates"),)),)
 
 
 def test_query_meta() -> None:
     q = parse_query("?- ancestor(?X, alice).")
-    assert q == Atom("ancestor", (Meta("?X"), Const("alice")))
+    assert q == (Atom("ancestor", (Meta("?X"), Const("alice"))),)
 
 
 def test_query_equality() -> None:
     q = parse_query("?- X = Y.")
-    assert q == Equals(Var("X"), Var("Y"))
+    assert q == (Equals(Var("X"), Var("Y")),)
 
 
 def test_query_ground_equality() -> None:
     q = parse_query("?- 0 = 0.")
-    assert q == Equals(Const(0), Const(0))
+    assert q == (Equals(Const(0), Const(0)),)
 
 
 def test_query_zero_arity() -> None:
     q = parse_query("?- raining.")
-    assert q == Atom("raining", ())
+    assert q == (Atom("raining", ()),)
 
 
 def test_query_missing_prefix_raises() -> None:
